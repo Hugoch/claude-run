@@ -2,7 +2,36 @@ import { useState, useMemo, useRef } from "react";
 import type { ConversationMessage } from "@claude-run/api";
 import { ChevronDown, ChevronUp } from "lucide-react";
 
-const CONTEXT_LIMIT = 200_000;
+const MODEL_CONTEXT_LIMITS: Record<string, number> = {
+  "claude-sonnet-4-5-20250514": 200_000,
+  "claude-opus-4-5-20250514": 200_000,
+  "claude-haiku-3-5-20241022": 200_000,
+  "claude-sonnet-4-6-20250627": 200_000,
+  "claude-opus-4-6-20250627": 1_000_000,
+};
+
+function getContextLimit(model?: string): number {
+  if (!model) return 200_000;
+  // Exact match
+  if (MODEL_CONTEXT_LIMITS[model]) return MODEL_CONTEXT_LIMITS[model];
+  // Prefix match (e.g. "claude-opus-4-6" matches "claude-opus-4-6-20250627")
+  for (const [key, limit] of Object.entries(MODEL_CONTEXT_LIMITS)) {
+    if (model.startsWith(key.replace(/-\d{8}$/, ""))) return limit;
+  }
+  // Default heuristic: 1M for opus 4.6, 200k otherwise
+  if (model.includes("opus-4-6") || model.includes("opus-4.6")) return 1_000_000;
+  return 200_000;
+}
+
+function formatModelName(model: string): string {
+  if (model.includes("opus-4-6") || model.includes("opus-4.6")) return "Opus 4.6";
+  if (model.includes("sonnet-4-6") || model.includes("sonnet-4.6")) return "Sonnet 4.6";
+  if (model.includes("opus-4-5") || model.includes("opus-4.5")) return "Opus 4.5";
+  if (model.includes("sonnet-4-5") || model.includes("sonnet-4.5")) return "Sonnet 4.5";
+  if (model.includes("haiku-3-5") || model.includes("haiku-3.5")) return "Haiku 3.5";
+  if (model.includes("haiku-4-5") || model.includes("haiku-4.5")) return "Haiku 4.5";
+  return model;
+}
 
 function formatTokenCount(n: number): string {
   if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M`;
@@ -50,6 +79,7 @@ function useContextData(messages: ConversationMessage[]) {
     let peakInput = 0;
     let turnIdx = 0;
     let firstTs: number | null = null;
+    let model: string | undefined;
 
     for (const m of messages) {
       if (m.type === "summary") {
@@ -58,6 +88,7 @@ function useContextData(messages: ConversationMessage[]) {
         continue;
       }
       if (m.type !== "assistant") continue;
+      if (m.message?.model) model = m.message.model;
       const usage = m.message?.usage;
       if (!usage) continue;
 
@@ -90,13 +121,14 @@ function useContextData(messages: ConversationMessage[]) {
       nextIsCompaction = false;
     }
 
-    const contextPct = Math.round((lastInput / CONTEXT_LIMIT) * 100);
+    const contextLimit = getContextLimit(model);
+    const contextPct = Math.round((lastInput / contextLimit) * 100);
     const cacheHitRate = totalInput > 0 ? Math.round((totalCacheRead / totalInput) * 100) : 0;
 
     const lastTurn = turns[turns.length - 1];
     const totalDurationMs = lastTurn?.elapsedMs ?? null;
 
-    return { turns, totalOutput, totalInput, totalCacheRead, compacts, lastInput, contextPct, cacheHitRate, peakInput, totalDurationMs };
+    return { turns, totalOutput, totalInput, totalCacheRead, compacts, lastInput, contextPct, cacheHitRate, peakInput, totalDurationMs, model, contextLimit };
   }, [messages]);
 }
 
@@ -168,8 +200,8 @@ export function ContextPanel({ messages }: ContextPanelProps) {
 
   if (data.lastInput === 0) return null;
 
-  const { turns, totalOutput, compacts, lastInput, contextPct, cacheHitRate, peakInput, totalDurationMs } = data;
-  const yMax = Math.max(CONTEXT_LIMIT, peakInput * 1.05);
+  const { turns, totalOutput, compacts, lastInput, contextPct, cacheHitRate, peakInput, totalDurationMs, model, contextLimit } = data;
+  const yMax = Math.max(contextLimit, peakInput * 1.05);
   const { cachePath, creationPath, freshPath } = buildStackedPaths(turns, yMax);
 
   const n = turns.length;
@@ -192,7 +224,7 @@ export function ContextPanel({ messages }: ContextPanelProps) {
         className="w-full px-4 py-1 flex items-center justify-end gap-1.5 cursor-pointer hover:bg-card/50 transition-colors"
       >
         <span className="text-[10px] text-muted-foreground/60">
-          {contextPct}% ctx · {formatTokenCount(lastInput)} in · {formatTokenCount(totalOutput)} out{compacts > 0 && ` · ${compacts}x compact`}
+          {model && <>{formatModelName(model)} · </>}{contextPct}% of {formatTokenCount(contextLimit)} · {formatTokenCount(lastInput)} in · {formatTokenCount(totalOutput)} out{compacts > 0 && ` · ${compacts}x compact`}
         </span>
         {expanded ? (
           <ChevronDown className="w-3 h-3 text-muted-foreground/60" />
@@ -220,18 +252,18 @@ export function ContextPanel({ messages }: ContextPanelProps) {
                 0
               </text>
 
-              {/* 200k limit line */}
+              {/* Context limit line */}
               <line
-                x1={PAD_L} y1={PAD_T + PLOT_H - (CONTEXT_LIMIT / yMax) * PLOT_H}
-                x2={PAD_L + PLOT_W} y2={PAD_T + PLOT_H - (CONTEXT_LIMIT / yMax) * PLOT_H}
+                x1={PAD_L} y1={PAD_T + PLOT_H - (contextLimit / yMax) * PLOT_H}
+                x2={PAD_L + PLOT_W} y2={PAD_T + PLOT_H - (contextLimit / yMax) * PLOT_H}
                 stroke="#ef4444" strokeWidth={0.5} strokeDasharray="4,3" opacity={0.4}
               />
               <text
                 x={PAD_L + PLOT_W + 2}
-                y={PAD_T + PLOT_H - (CONTEXT_LIMIT / yMax) * PLOT_H + 3}
+                y={PAD_T + PLOT_H - (contextLimit / yMax) * PLOT_H + 3}
                 className="fill-red-500/40 text-[7px]"
               >
-                200k
+                {formatTokenCount(contextLimit)}
               </text>
 
               {/* Stacked areas */}

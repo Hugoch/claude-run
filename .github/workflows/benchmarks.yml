@@ -1,0 +1,59 @@
+name: Benchmarks
+
+on:
+  pull_request:
+    branches: [main]
+  workflow_dispatch:
+
+jobs:
+  benchmark:
+    name: Multi-size Benchmarks (50MB, 200MB, 500MB)
+    runs-on: ubuntu-latest
+    timeout-minutes: 120
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
+      - name: Cache Rust build
+        uses: Swatinem/rust-cache@v2
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+
+      - name: Cache pnpm
+        uses: pnpm/action-setup@v2
+
+      - name: Cache Node modules
+        uses: actions/cache@v3
+        with:
+          path: node_modules
+          key: ${{ runner.os }}-pnpm-${{ hashFiles('**/pnpm-lock.yaml') }}
+          restore-keys: |
+            ${{ runner.os }}-pnpm-
+
+      - name: Build frontend
+        run: |
+          pnpm install
+          pnpm build:web
+
+      - name: Build release binary
+        run: cargo build --release
+
+      - name: Run benchmarks
+        run: |
+          chmod +x scripts/bench.sh
+          bash scripts/bench.sh
+        env:
+          BENCH_DIR: /tmp/claude-run-bench
+
+      - name: Upload benchmark results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: benchmark-results
+          path: /tmp/claude-run-bench/

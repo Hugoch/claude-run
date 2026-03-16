@@ -1,0 +1,29 @@
+# Benchmark Configuration for claude-run
+# Defines performance testing parameters
+
+benchmarks:
+  - name: "Small File (50MB)"
+    size_mb: 50
+    description: "Tests performance with typical conversation file sizes"
+
+  - name: "Medium File (200MB)"
+    size_mb: 200
+    description: "Tests performance with larger conversation archives"
+
+  - name: "Large File (500MB)"
+    size_mb: 500
+    description: "Tests performance under heavy load with very large files"
+
+# Metrics to track
+metrics:
+  - file_load_time
+  - message_parsing_time
+  - api_response_time
+  - memory_usage
+  - cache_hit_rate
+
+# Triggers
+triggers:
+  - pull_requests: true
+  - manual: true
+  - schedule: null  # Can be set to cron expression for periodic benchmarks
