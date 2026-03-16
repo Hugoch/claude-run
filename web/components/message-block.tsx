@@ -50,8 +50,6 @@ import {
 
 const PROSE_CLASSES = "prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0";
 
-const HTML_PREVIEW_RE = /```html:preview\n([\s\S]*?)```/g;
-
 const RESIZE_SCRIPT = '<script>new ResizeObserver(function(){parent.postMessage({t:"r",h:document.documentElement.scrollHeight},"*")}).observe(document.documentElement)</script>';
 
 function HtmlPreviewBlock({ html }: { html: string }) {
@@ -98,17 +96,123 @@ function HtmlPreviewBlock({ html }: { html: string }) {
   );
 }
 
+function resolveImageSrc(raw: string): string {
+  const s = raw.trim();
+  if (s.startsWith("file:///")) {
+    return `/api/image?path=${encodeURIComponent(s.slice(7))}`;
+  }
+  if (s.startsWith("/") && !s.startsWith("/api/")) {
+    return `/api/image?path=${encodeURIComponent(s)}`;
+  }
+  return s;
+}
+
+function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
+  const imgRef = useRef<HTMLImageElement>(null);
+  const stateRef = useRef({ scale: 1, x: 0, y: 0, startDist: 0, startScale: 1, startX: 0, startY: 0, startTouchX: 0, startTouchY: 0, panning: false });
+
+  const apply = useCallback(() => {
+    const img = imgRef.current;
+    const s = stateRef.current;
+    if (img) img.style.transform = `translate(${s.x}px, ${s.y}px) scale(${s.scale})`;
+  }, []);
+
+  const onTouchStart = useCallback((e: React.TouchEvent) => {
+    const s = stateRef.current;
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      s.startDist = Math.hypot(dx, dy);
+      s.startScale = s.scale;
+    } else if (e.touches.length === 1 && s.scale > 1) {
+      s.panning = true;
+      s.startTouchX = e.touches[0].clientX;
+      s.startTouchY = e.touches[0].clientY;
+      s.startX = s.x;
+      s.startY = s.y;
+    }
+  }, []);
+
+  const onTouchMove = useCallback((e: React.TouchEvent) => {
+    const s = stateRef.current;
+    if (e.touches.length === 2) {
+      e.preventDefault();
+      const dx = e.touches[0].clientX - e.touches[1].clientX;
+      const dy = e.touches[0].clientY - e.touches[1].clientY;
+      const dist = Math.hypot(dx, dy);
+      s.scale = Math.max(1, Math.min(10, s.startScale * (dist / s.startDist)));
+      apply();
+    } else if (e.touches.length === 1 && s.panning) {
+      s.x = s.startX + (e.touches[0].clientX - s.startTouchX);
+      s.y = s.startY + (e.touches[0].clientY - s.startTouchY);
+      apply();
+    }
+  }, [apply]);
+
+  const onTouchEnd = useCallback((e: React.TouchEvent) => {
+    const s = stateRef.current;
+    s.panning = false;
+    if (s.scale <= 1) {
+      s.scale = 1;
+      s.x = 0;
+      s.y = 0;
+      apply();
+    }
+  }, [apply]);
+
+  return (
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/80"
+      onClick={onClose}
+      onTouchStart={onTouchStart}
+      onTouchMove={onTouchMove}
+      onTouchEnd={onTouchEnd}
+      style={{ touchAction: "none" }}
+    >
+      <img
+        ref={imgRef}
+        src={src}
+        alt=""
+        className="max-w-[95vw] max-h-[95vh] object-contain"
+        style={{ transformOrigin: "center center" }}
+        onClick={(e) => e.stopPropagation()}
+        draggable={false}
+      />
+    </div>
+  );
+}
+
+function ImagePreviewBlock({ src }: { src: string }) {
+  const [open, setOpen] = useState(false);
+  const url = resolveImageSrc(src);
+
+  return (
+    <>
+      <div className="my-3 rounded-xl border border-border overflow-hidden max-h-[600px] cursor-zoom-in" onClick={() => setOpen(true)}>
+        <img src={url} alt="" className="w-full h-auto object-contain bg-black/5 dark:bg-white/5" loading="lazy" />
+      </div>
+      {open && <ImageLightbox src={url} onClose={() => setOpen(false)} />}
+    </>
+  );
+}
+
+type Segment =
+  | { type: "text"; content: string }
+  | { type: "html"; content: string }
+  | { type: "img"; content: string };
+
 function RichMessageResponse({ children }: { children: string }) {
   const segments = useMemo(() => {
-    const parts: Array<{ type: "text"; content: string } | { type: "html"; content: string }> = [];
+    const parts: Segment[] = [];
     let lastIndex = 0;
-    const regex = new RegExp(HTML_PREVIEW_RE.source, "g");
+    const regex = /```(html|img):preview\n([\s\S]*?)```/g;
     let match;
     while ((match = regex.exec(children)) !== null) {
       if (match.index > lastIndex) {
         parts.push({ type: "text", content: children.slice(lastIndex, match.index) });
       }
-      parts.push({ type: "html", content: match[1].trim() });
+      parts.push({ type: match[1] as "html" | "img", content: match[2].trim() });
       lastIndex = match.index + match[0].length;
     }
     if (lastIndex < children.length) {
@@ -126,8 +230,10 @@ function RichMessageResponse({ children }: { children: string }) {
       {segments.map((seg, i) =>
         seg.type === "text" ? (
           <MessageResponse key={i}>{seg.content}</MessageResponse>
-        ) : (
+        ) : seg.type === "html" ? (
           <HtmlPreviewBlock key={i} html={seg.content} />
+        ) : (
+          <ImagePreviewBlock key={i} src={seg.content} />
         )
       )}
     </>
