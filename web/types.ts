@@ -18,6 +18,7 @@ export interface Session {
   gitBranch?: string;
   summary?: string;
   fileSize?: number;
+  tags?: string[];
 }
 
 export interface ConversationMessage {

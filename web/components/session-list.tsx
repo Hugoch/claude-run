@@ -1,4 +1,4 @@
-import { useState, useMemo, memo } from "react";
+import { useState, useMemo, memo, useRef, useEffect } from "react";
 import type { Session } from "@claude-run/api";
 import { formatTime } from "../utils";
 
@@ -8,8 +8,148 @@ interface SessionListProps {
   onSelectSession: (sessionId: string) => void;
   onDeleteSession?: (sessionId: string) => void;
   onResurrectSession?: (sessionId: string, project: string, name: string) => void;
+  onUpdateTags?: (sessionId: string, tags: string[]) => void;
   loading?: boolean;
   selectedProject?: string | null;
+}
+
+function normalizeTag(raw: string): string | null {
+  const trimmed = raw.trim().replace(/^#/, "").trim();
+  if (!trimmed) return null;
+  return trimmed.toLowerCase();
+}
+
+function TagsRow({
+  sessionId,
+  tags,
+  onUpdateTags,
+  suggestions,
+  activeFilters,
+  onToggleFilter,
+}: {
+  sessionId: string;
+  tags: string[];
+  onUpdateTags?: (id: string, tags: string[]) => void;
+  suggestions: string[];
+  activeFilters: string[];
+  onToggleFilter?: (tag: string) => void;
+}) {
+  const [editing, setEditing] = useState(false);
+  const [draft, setDraft] = useState("");
+  const inputRef = useRef<HTMLInputElement | null>(null);
+
+  useEffect(() => {
+    if (editing) inputRef.current?.focus();
+  }, [editing]);
+
+  const datalistId = `tags-suggestions-${sessionId}`;
+
+  const addTag = (raw: string) => {
+    if (!onUpdateTags) return;
+    const t = normalizeTag(raw);
+    if (!t) return;
+    if (tags.includes(t)) return;
+    onUpdateTags(sessionId, [...tags, t]);
+  };
+
+  const removeTag = (tag: string) => {
+    if (!onUpdateTags) return;
+    onUpdateTags(sessionId, tags.filter((t) => t !== tag));
+  };
+
+  const canEdit = !!onUpdateTags;
+  if (!canEdit && tags.length === 0) return null;
+
+  return (
+    <div className="flex items-center flex-wrap gap-1 mt-1">
+      {tags.map((tag) => {
+        const isActive = activeFilters.includes(tag);
+        return (
+          <span
+            key={tag}
+            className={`group/tag inline-flex items-center gap-0.5 px-1.5 py-0.5 text-[10px] rounded border transition-colors ${
+              isActive
+                ? "border-blue-500/50 bg-blue-500/15 text-blue-700 dark:text-blue-300"
+                : "border-border/60 bg-muted/50 text-muted-foreground hover:text-foreground"
+            }`}
+          >
+            <button
+              onClick={(e) => {
+                e.stopPropagation();
+                onToggleFilter?.(tag);
+              }}
+              className="cursor-pointer"
+              title={isActive ? `Remove "${tag}" filter` : `Filter by "${tag}"`}
+            >
+              {tag}
+            </button>
+            {canEdit && (
+              <button
+                onClick={(e) => {
+                  e.stopPropagation();
+                  removeTag(tag);
+                }}
+                className="opacity-0 group-hover/tag:opacity-100 hover:text-red-500 transition-opacity"
+                title="Remove tag"
+              >
+                <svg className="w-2.5 h-2.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M6 18L18 6M6 6l12 12" />
+                </svg>
+              </button>
+            )}
+          </span>
+        );
+      })}
+      {canEdit && (
+        editing ? (
+          <>
+            <input
+              ref={inputRef}
+              type="text"
+              value={draft}
+              list={datalistId}
+              onChange={(e) => setDraft(e.target.value)}
+              onClick={(e) => e.stopPropagation()}
+              onKeyDown={(e) => {
+                e.stopPropagation();
+                if (e.key === "Enter") {
+                  e.preventDefault();
+                  addTag(draft);
+                  setDraft("");
+                } else if (e.key === "Escape") {
+                  setDraft("");
+                  setEditing(false);
+                }
+              }}
+              onBlur={() => {
+                if (draft.trim()) addTag(draft);
+                setDraft("");
+                setEditing(false);
+              }}
+              placeholder="tag..."
+              className="px-1 py-0.5 text-[10px] rounded border border-border/60 bg-background text-foreground focus:outline-none focus:border-blue-500/60 w-20"
+            />
+            <datalist id={datalistId}>
+              {suggestions.filter((s) => !tags.includes(s)).map((s) => (
+                <option key={s} value={s} />
+              ))}
+            </datalist>
+          </>
+        ) : (
+          <button
+            onClick={(e) => {
+              e.stopPropagation();
+              setEditing(true);
+            }}
+            className="opacity-0 group-hover:opacity-100 inline-flex items-center justify-center w-4 h-4 text-[10px] rounded border border-dashed border-border/60 text-muted-foreground hover:text-foreground hover:border-foreground/60 transition-all"
+            title="Add tag"
+          >
+            +
+          </button>
+        )
+      )}
+    </div>
+  );
 }
 
 interface ListItem {
@@ -28,6 +168,10 @@ function SessionItem({
   onSelect,
   onDelete,
   onResurrect,
+  onUpdateTags,
+  tagSuggestions,
+  activeTagFilters,
+  onToggleTagFilter,
   hideProject,
   olderCount,
   isExpanded,
@@ -40,6 +184,10 @@ function SessionItem({
   onSelect: () => void;
   onDelete?: (id: string) => void;
   onResurrect?: (id: string, project: string, name: string) => void;
+  onUpdateTags?: (id: string, tags: string[]) => void;
+  tagSuggestions: string[];
+  activeTagFilters: string[];
+  onToggleTagFilter?: (tag: string) => void;
   hideProject?: boolean;
   olderCount?: number;
   isExpanded?: boolean;
@@ -118,6 +266,16 @@ function SessionItem({
       <p className={`text-[12px] leading-snug line-clamp-2 break-words ${isChild ? "text-muted-foreground line-clamp-1" : "text-foreground"}`}>
         {session.summary || session.display}
       </p>
+      {!isChild && (
+        <TagsRow
+          sessionId={session.id}
+          tags={session.tags ?? []}
+          onUpdateTags={onUpdateTags}
+          suggestions={tagSuggestions}
+          activeFilters={activeTagFilters}
+          onToggleFilter={onToggleTagFilter}
+        />
+      )}
       <div className="flex items-center gap-1.5 mt-1">
         {(session.zellijSession || paneId) && (
           <span className={`px-1 text-[10px] rounded ${paneVerified ? "text-green-600 bg-green-600/10" : "text-muted-foreground/60 bg-muted opacity-50"}`}>
@@ -146,23 +304,60 @@ function SessionItem({
 
 
 const SessionList = memo(function SessionList(props: SessionListProps) {
-  const { sessions, selectedSession, onSelectSession, onDeleteSession, onResurrectSession, loading: sessionsLoading, selectedProject } = props;
+  const { sessions, selectedSession, onSelectSession, onDeleteSession, onResurrectSession, onUpdateTags, loading: sessionsLoading, selectedProject } = props;
   const [search, setSearch] = useState("");
   const [viewMode, setViewMode] = useState<ViewMode>(() => (localStorage.getItem("cl:viewMode") as ViewMode) || "recent");
   const [toggledProjects, setToggledProjects] = useState<Map<string, boolean>>(new Map());
   const [onlyActive, setOnlyActive] = useState(() => localStorage.getItem("cl:onlyActive") === "true");
   const [expandedSlugs, setExpandedSlugs] = useState<Set<string>>(new Set());
+  const [activeTagFilters, setActiveTagFilters] = useState<string[]>(() => {
+    try {
+      const raw = localStorage.getItem("cl:activeTags");
+      return raw ? (JSON.parse(raw) as string[]) : [];
+    } catch {
+      return [];
+    }
+  });
+
+  const allTags = useMemo(() => {
+    const set = new Set<string>();
+    for (const s of sessions) s.tags?.forEach((t) => set.add(t));
+    return [...set].sort();
+  }, [sessions]);
+
+  // Drop active filters that no longer exist in any session
+  useEffect(() => {
+    setActiveTagFilters((prev) => {
+      const filtered = prev.filter((t) => allTags.includes(t));
+      return filtered.length === prev.length ? prev : filtered;
+    });
+  }, [allTags]);
+
+  const toggleTagFilter = (tag: string) => {
+    setActiveTagFilters((prev) => {
+      const next = prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag];
+      localStorage.setItem("cl:activeTags", JSON.stringify(next));
+      return next;
+    });
+  };
 
   // Search filtering + slug parent/child grouping
   // Preserves input order from parent (already stable across SSE updates)
   const listItems = useMemo((): ListItem[] => {
     let list = onlyActive ? sessions.filter(s => s.status) : sessions;
+    if (activeTagFilters.length > 0) {
+      list = list.filter((s) => {
+        const t = s.tags ?? [];
+        return activeTagFilters.every((f) => t.includes(f));
+      });
+    }
     if (search.trim()) {
       const query = search.toLowerCase();
       list = list.filter(
         (s) =>
           s.display.toLowerCase().includes(query) ||
-          s.projectName.toLowerCase().includes(query)
+          s.projectName.toLowerCase().includes(query) ||
+          (s.tags ?? []).some((t) => t.includes(query))
       );
     }
     // Group sessions by slug — only show the latest, older ones go in dropdown
@@ -193,7 +388,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
       }
     }
     return result;
-  }, [sessions, search, onlyActive]);
+  }, [sessions, search, onlyActive, activeTagFilters]);
 
   // Folder view: group listItems by projectName
   const projectGroups = useMemo(() => {
@@ -230,6 +425,13 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
 
   const isSearchActive = search.trim().length > 0;
 
+  const tagProps = {
+    onUpdateTags,
+    tagSuggestions: allTags,
+    activeTagFilters,
+    onToggleTagFilter: toggleTagFilter,
+  };
+
   // Whether to show project headers in folder view (hide if single project filtered)
   const showProjectHeaders = !selectedProject;
 
@@ -250,7 +452,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
                   isFirst={index === 0}
                   onSelect={() => onSelectSession(session.id)}
                   onDelete={onDeleteSession}
-                  onResurrect={onResurrectSession}
+                  onResurrect={onResurrectSession} {...tagProps}
                   hideProject
                   olderCount={olderSessions?.length}
                   isExpanded={isExpanded}
@@ -265,7 +467,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
                     isFirst={false}
                     onSelect={() => onSelectSession(older.id)}
                     onDelete={onDeleteSession}
-                    onResurrect={onResurrectSession}
+                    onResurrect={onResurrectSession} {...tagProps}
                     hideProject
                   />
                 ))}
@@ -303,7 +505,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
                       isFirst={false}
                       onSelect={() => onSelectSession(session.id)}
                       onDelete={onDeleteSession}
-                      onResurrect={onResurrectSession}
+                      onResurrect={onResurrectSession} {...tagProps}
                       hideProject
                       olderCount={olderSessions?.length}
                       isExpanded={isExpanded}
@@ -318,7 +520,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
                         isFirst={false}
                         onSelect={() => onSelectSession(older.id)}
                         onDelete={onDeleteSession}
-                        onResurrect={onResurrectSession}
+                        onResurrect={onResurrectSession} {...tagProps}
                         hideProject
                       />
                     ))}
@@ -353,7 +555,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
               isFirst={index === 0}
               onSelect={() => onSelectSession(session.id)}
               onDelete={onDeleteSession}
-              onResurrect={onResurrectSession}
+              onResurrect={onResurrectSession} {...tagProps}
               olderCount={olderSessions?.length}
               isExpanded={isExpanded}
               onToggleOlder={session.slug ? () => toggleSlug(session.slug!) : undefined}
@@ -367,7 +569,7 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
                 isFirst={false}
                 onSelect={() => onSelectSession(older.id)}
                 onDelete={onDeleteSession}
-                onResurrect={onResurrectSession}
+                onResurrect={onResurrectSession} {...tagProps}
               />
             ))}
           </div>
@@ -454,6 +656,38 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
             Active
           </button>
         </div>
+        {allTags.length > 0 && (
+          <div className="flex flex-wrap gap-1 mt-2">
+            {allTags.map((tag) => {
+              const isActive = activeTagFilters.includes(tag);
+              return (
+                <button
+                  key={tag}
+                  onClick={() => toggleTagFilter(tag)}
+                  className={`px-1.5 py-0.5 text-[10px] rounded border transition-colors ${
+                    isActive
+                      ? "border-blue-500/50 bg-blue-500/15 text-blue-700 dark:text-blue-300"
+                      : "border-border/60 bg-muted/50 text-muted-foreground hover:text-foreground"
+                  }`}
+                >
+                  {tag}
+                </button>
+              );
+            })}
+            {activeTagFilters.length > 0 && (
+              <button
+                onClick={() => {
+                  setActiveTagFilters([]);
+                  localStorage.setItem("cl:activeTags", "[]");
+                }}
+                className="px-1.5 py-0.5 text-[10px] rounded text-muted-foreground/70 hover:text-foreground transition-colors"
+                title="Clear tag filters"
+              >
+                clear
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       <div className="flex-1 overflow-y-auto">

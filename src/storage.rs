@@ -451,6 +451,7 @@ pub async fn get_sessions(state: &AppState) -> Vec<Session> {
         let slug = get_session_slug(state, &session_id).await;
         let git_branch = get_session_git_branch(state, &session_id).await;
         let summary = state.summary_cache.get(&session_id).map(|v| v.0.clone());
+        let tags = crate::tags::get_tags(state, &session_id);
 
         let display = if entry.display.contains("** Session started from claude-run **") {
             "New session".to_string()
@@ -476,6 +477,7 @@ pub async fn get_sessions(state: &AppState) -> Vec<Session> {
             git_branch,
             summary,
             file_size,
+            tags,
         });
     }
 
@@ -532,6 +534,7 @@ pub async fn get_sessions(state: &AppState) -> Vec<Session> {
         let slug = get_session_slug(state, &session_id).await;
         let git_branch = get_session_git_branch(state, &session_id).await;
         let summary = state.summary_cache.get(&session_id).map(|v| v.0.clone());
+        let tags = crate::tags::get_tags(state, &session_id);
 
         sessions.push(Session {
             id: session_id.clone(),
@@ -551,6 +554,7 @@ pub async fn get_sessions(state: &AppState) -> Vec<Session> {
             git_branch,
             summary,
             file_size,
+            tags,
         });
     }
 
@@ -994,6 +998,7 @@ pub async fn delete_session(state: &AppState, session_id: &str) -> bool {
     state.file_index.remove(session_id);
     state.hidden_sessions.insert(session_id.to_string(), ());
     state.summary_cache.remove(session_id);
+    crate::tags::remove_session_tags(state, session_id).await;
     state.invalidate_history_cache();
 
     // Persist to disk so deletion survives restart
