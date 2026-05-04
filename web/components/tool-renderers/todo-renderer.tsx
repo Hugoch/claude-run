@@ -61,8 +61,12 @@ export function TodoRenderer(props: TodoRendererProps) {
               key={index}
               className="flex items-start gap-2.5 px-3 py-2 hover:bg-muted/50 transition-colors"
             >
-              <span className="mt-0.5 flex-shrink-0">{getStatusIcon(todo.status)}</span>
-              <span className={`text-xs leading-relaxed ${getStatusClass(todo.status)}`}>
+              <span className="mt-0.5 flex-shrink-0">
+                {getStatusIcon(todo.status)}
+              </span>
+              <span
+                className={`text-xs leading-relaxed ${getStatusClass(todo.status)}`}
+              >
                 {todo.content}
               </span>
             </li>

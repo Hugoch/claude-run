@@ -31,8 +31,16 @@ import {
 import { sanitizeText } from "../utils";
 import { ShareButton } from "./share-button";
 import { TtsButton } from "./tts-button";
-import { Message, MessageContent, MessageResponse } from "./ai-elements/message";
-import { Reasoning, ReasoningTrigger, ReasoningContent } from "./ai-elements/reasoning";
+import {
+  Message,
+  MessageContent,
+  MessageResponse,
+} from "./ai-elements/message";
+import {
+  Reasoning,
+  ReasoningTrigger,
+  ReasoningContent,
+} from "./ai-elements/reasoning";
 import {
   TodoRenderer,
   EditRenderer,
@@ -48,9 +56,11 @@ import {
   TaskRenderer,
 } from "./tool-renderers";
 
-const PROSE_CLASSES = "prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0";
+const PROSE_CLASSES =
+  "prose prose-sm dark:prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0";
 
-const RESIZE_SCRIPT = '<script>new ResizeObserver(function(){parent.postMessage({t:"r",h:document.documentElement.scrollHeight},"*")}).observe(document.documentElement)</script>';
+const RESIZE_SCRIPT =
+  '<script>new ResizeObserver(function(){parent.postMessage({t:"r",h:document.documentElement.scrollHeight},"*")}).observe(document.documentElement)</script>';
 
 function HtmlPreviewBlock({ html }: { html: string }) {
   const [view, setView] = useState<"preview" | "source">("preview");
@@ -76,21 +86,37 @@ function HtmlPreviewBlock({ html }: { html: string }) {
           <button
             onClick={() => setView("preview")}
             className={`px-2 py-0.5 rounded text-[10px] transition-colors cursor-pointer ${
-              view === "preview" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              view === "preview"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             }`}
-          >Preview</button>
+          >
+            Preview
+          </button>
           <button
             onClick={() => setView("source")}
             className={`px-2 py-0.5 rounded text-[10px] transition-colors cursor-pointer ${
-              view === "source" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+              view === "source"
+                ? "bg-background text-foreground shadow-sm"
+                : "text-muted-foreground hover:text-foreground"
             }`}
-          >Source</button>
+          >
+            Source
+          </button>
         </div>
       </div>
       {view === "preview" ? (
-        <iframe ref={iframeRef} sandbox="allow-scripts" srcDoc={srcDoc} className="w-full border-0" style={{ height }} />
+        <iframe
+          ref={iframeRef}
+          sandbox="allow-scripts"
+          srcDoc={srcDoc}
+          className="w-full border-0"
+          style={{ height }}
+        />
       ) : (
-        <pre className="text-xs font-mono p-3 overflow-x-auto max-h-[400px] overflow-y-auto text-foreground">{html}</pre>
+        <pre className="text-xs font-mono p-3 overflow-x-auto max-h-[400px] overflow-y-auto text-foreground">
+          {html}
+        </pre>
       )}
     </div>
   );
@@ -109,12 +135,24 @@ function resolveImageSrc(raw: string): string {
 
 function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
   const imgRef = useRef<HTMLImageElement>(null);
-  const stateRef = useRef({ scale: 1, x: 0, y: 0, startDist: 0, startScale: 1, startX: 0, startY: 0, startTouchX: 0, startTouchY: 0, panning: false });
+  const stateRef = useRef({
+    scale: 1,
+    x: 0,
+    y: 0,
+    startDist: 0,
+    startScale: 1,
+    startX: 0,
+    startY: 0,
+    startTouchX: 0,
+    startTouchY: 0,
+    panning: false,
+  });
 
   const apply = useCallback(() => {
     const img = imgRef.current;
     const s = stateRef.current;
-    if (img) img.style.transform = `translate(${s.x}px, ${s.y}px) scale(${s.scale})`;
+    if (img)
+      img.style.transform = `translate(${s.x}px, ${s.y}px) scale(${s.scale})`;
   }, []);
 
   const onTouchStart = useCallback((e: React.TouchEvent) => {
@@ -134,32 +172,41 @@ function ImageLightbox({ src, onClose }: { src: string; onClose: () => void }) {
     }
   }, []);
 
-  const onTouchMove = useCallback((e: React.TouchEvent) => {
-    const s = stateRef.current;
-    if (e.touches.length === 2) {
-      e.preventDefault();
-      const dx = e.touches[0].clientX - e.touches[1].clientX;
-      const dy = e.touches[0].clientY - e.touches[1].clientY;
-      const dist = Math.hypot(dx, dy);
-      s.scale = Math.max(1, Math.min(10, s.startScale * (dist / s.startDist)));
-      apply();
-    } else if (e.touches.length === 1 && s.panning) {
-      s.x = s.startX + (e.touches[0].clientX - s.startTouchX);
-      s.y = s.startY + (e.touches[0].clientY - s.startTouchY);
-      apply();
-    }
-  }, [apply]);
+  const onTouchMove = useCallback(
+    (e: React.TouchEvent) => {
+      const s = stateRef.current;
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.hypot(dx, dy);
+        s.scale = Math.max(
+          1,
+          Math.min(10, s.startScale * (dist / s.startDist)),
+        );
+        apply();
+      } else if (e.touches.length === 1 && s.panning) {
+        s.x = s.startX + (e.touches[0].clientX - s.startTouchX);
+        s.y = s.startY + (e.touches[0].clientY - s.startTouchY);
+        apply();
+      }
+    },
+    [apply],
+  );
 
-  const onTouchEnd = useCallback((e: React.TouchEvent) => {
-    const s = stateRef.current;
-    s.panning = false;
-    if (s.scale <= 1) {
-      s.scale = 1;
-      s.x = 0;
-      s.y = 0;
-      apply();
-    }
-  }, [apply]);
+  const onTouchEnd = useCallback(
+    (e: React.TouchEvent) => {
+      const s = stateRef.current;
+      s.panning = false;
+      if (s.scale <= 1) {
+        s.scale = 1;
+        s.x = 0;
+        s.y = 0;
+        apply();
+      }
+    },
+    [apply],
+  );
 
   return (
     <div
@@ -189,8 +236,16 @@ function ImagePreviewBlock({ src }: { src: string }) {
 
   return (
     <>
-      <div className="my-3 rounded-xl border border-border overflow-hidden max-h-[600px] cursor-zoom-in" onClick={() => setOpen(true)}>
-        <img src={url} alt="" className="w-full h-auto object-contain bg-black/5 dark:bg-white/5" loading="lazy" />
+      <div
+        className="my-3 rounded-xl border border-border overflow-hidden max-h-[600px] cursor-zoom-in"
+        onClick={() => setOpen(true)}
+      >
+        <img
+          src={url}
+          alt=""
+          className="w-full h-auto object-contain bg-black/5 dark:bg-white/5"
+          loading="lazy"
+        />
       </div>
       {open && <ImageLightbox src={url} onClose={() => setOpen(false)} />}
     </>
@@ -210,9 +265,15 @@ function RichMessageResponse({ children }: { children: string }) {
     let match;
     while ((match = regex.exec(children)) !== null) {
       if (match.index > lastIndex) {
-        parts.push({ type: "text", content: children.slice(lastIndex, match.index) });
+        parts.push({
+          type: "text",
+          content: children.slice(lastIndex, match.index),
+        });
       }
-      parts.push({ type: match[1] as "html" | "img", content: match[2].trim() });
+      parts.push({
+        type: match[1] as "html" | "img",
+        content: match[2].trim(),
+      });
       lastIndex = match.index + match[0].length;
     }
     if (lastIndex < children.length) {
@@ -234,7 +295,7 @@ function RichMessageResponse({ children }: { children: string }) {
           <HtmlPreviewBlock key={i} html={seg.content} />
         ) : (
           <ImagePreviewBlock key={i} src={seg.content} />
-        )
+        ),
       )}
     </>
   );
@@ -249,7 +310,6 @@ function formatDuration(ms: number): string {
   return `${min}m${remainSec > 0 ? `${remainSec}s` : ""}`;
 }
 
-
 interface MessageBlockProps {
   message: ConversationMessage;
   sessionId?: string;
@@ -258,7 +318,10 @@ interface MessageBlockProps {
   onNavigateSession?: (sessionId: string) => void;
   onOpenFile?: (filePath: string) => void;
   questionPending?: boolean;
-  taskNotifications?: Map<string, { status: string; summary: string; toolUseId?: string }>;
+  taskNotifications?: Map<
+    string,
+    { status: string; summary: string; toolUseId?: string }
+  >;
   toolResultMap?: Map<string, { content: string; isError: boolean }>;
   taskSubjects?: Map<string, string>;
   highlightedTaskId?: string | null;
@@ -318,7 +381,11 @@ function TaskNotificationPill({ data }: { data: TaskNotificationData }) {
           : "bg-secondary text-green-600 border-border"
       }`}
     >
-      {failed ? <CircleX size={12} className="opacity-70" /> : <CircleCheck size={12} className="opacity-70" />}
+      {failed ? (
+        <CircleX size={12} className="opacity-70" />
+      ) : (
+        <CircleCheck size={12} className="opacity-70" />
+      )}
       <span className="font-medium">{data.summary}</span>
     </div>
   );
@@ -335,7 +402,9 @@ function PlanImplementationMessage({ text }: { text: string }) {
         >
           <FileCode2 size={12} className="opacity-70" />
           <span className="font-medium">Plan implementation</span>
-          <span className="text-[10px] opacity-40 ml-0.5">{expanded ? "▼" : "▶"}</span>
+          <span className="text-[10px] opacity-40 ml-0.5">
+            {expanded ? "▼" : "▶"}
+          </span>
         </button>
         {expanded && (
           <div className="mt-2 rounded-lg border border-border bg-card/80 p-3">
@@ -377,7 +446,20 @@ function CompactMessage({ text }: { text: string }) {
 }
 
 const MessageBlock = memo(function MessageBlock(props: MessageBlockProps) {
-  const { message, sessionId, subagentMap, onNavigateSession, onOpenFile, questionPending, taskNotifications, toolResultMap, taskSubjects, highlightedTaskId, onHighlightTask, toolDurationMap } = props;
+  const {
+    message,
+    sessionId,
+    subagentMap,
+    onNavigateSession,
+    onOpenFile,
+    questionPending,
+    taskNotifications,
+    toolResultMap,
+    taskSubjects,
+    highlightedTaskId,
+    onHighlightTask,
+    toolDurationMap,
+  } = props;
 
   const isUser = message.type === "user";
   const content = message.message?.content;
@@ -395,13 +477,15 @@ const MessageBlock = memo(function MessageBlock(props: MessageBlockProps) {
     }
     return content.filter(
       (b) =>
-        b.type === "tool_use" || b.type === "tool_result" || b.type === "thinking"
+        b.type === "tool_use" ||
+        b.type === "tool_result" ||
+        b.type === "thinking",
     );
   };
 
   const getVisibleTextBlocks = (): ContentBlock[] => {
     return getTextBlocks().filter(
-      (b) => b.text && sanitizeText(b.text).length > 0
+      (b) => b.text && sanitizeText(b.text).length > 0,
     );
   };
 
@@ -417,13 +501,30 @@ const MessageBlock = memo(function MessageBlock(props: MessageBlockProps) {
   const hasText = hasVisibleText();
   const hasTools = toolBlocks.length > 0;
 
-  const toolMap = Array.isArray(content) ? buildToolMap(content) : new Map<string, string>();
+  const toolMap = Array.isArray(content)
+    ? buildToolMap(content)
+    : new Map<string, string>();
 
   if (!hasText && hasTools) {
     return (
       <div className="flex flex-col gap-1 empty:hidden">
         {toolBlocks.map((block, index) => (
-          <ContentBlockRenderer key={index} block={block} toolMap={toolMap} sessionId={sessionId} subagentMap={subagentMap} onNavigateSession={onNavigateSession} onOpenFile={onOpenFile} questionPending={questionPending} taskNotifications={taskNotifications} toolResultMap={toolResultMap} taskSubjects={taskSubjects} highlightedTaskId={highlightedTaskId} onHighlightTask={onHighlightTask} toolDurationMap={toolDurationMap} />
+          <ContentBlockRenderer
+            key={index}
+            block={block}
+            toolMap={toolMap}
+            sessionId={sessionId}
+            subagentMap={subagentMap}
+            onNavigateSession={onNavigateSession}
+            onOpenFile={onOpenFile}
+            questionPending={questionPending}
+            taskNotifications={taskNotifications}
+            toolResultMap={toolResultMap}
+            taskSubjects={taskSubjects}
+            highlightedTaskId={highlightedTaskId}
+            onHighlightTask={onHighlightTask}
+            toolDurationMap={toolDurationMap}
+          />
         ))}
       </div>
     );
@@ -433,7 +534,9 @@ const MessageBlock = memo(function MessageBlock(props: MessageBlockProps) {
   const rawText = useMemo(() => {
     if (!isUser) return null;
     if (typeof content === "string") return content;
-    const blocks = Array.isArray(content) ? content.filter((b) => b.type === "text" && b.text) : [];
+    const blocks = Array.isArray(content)
+      ? content.filter((b) => b.type === "text" && b.text)
+      : [];
     return blocks.map((b) => b.text || "").join("\n");
   }, [isUser, content]);
 
@@ -457,7 +560,11 @@ const MessageBlock = memo(function MessageBlock(props: MessageBlockProps) {
   }
 
   // Detect context compaction message
-  if (rawText?.startsWith("This session is being continued from a previous conversation")) {
+  if (
+    rawText?.startsWith(
+      "This session is being continued from a previous conversation",
+    )
+  ) {
     return <CompactMessage text={rawText} />;
   }
 
@@ -475,14 +582,19 @@ const MessageBlock = memo(function MessageBlock(props: MessageBlockProps) {
   }
 
   // Detect bash output (stdout/stderr from ! command)
-  const bashOutput = rawText?.match(/^<bash-stdout>([\s\S]*?)<\/bash-stdout><bash-stderr>([\s\S]*?)<\/bash-stderr>$/);
+  const bashOutput = rawText?.match(
+    /^<bash-stdout>([\s\S]*?)<\/bash-stdout><bash-stderr>([\s\S]*?)<\/bash-stderr>$/,
+  );
   if (bashOutput) {
     const stdout = bashOutput[1];
     const stderr = bashOutput[2];
     const output = (stdout + stderr).trim();
     if (!output) return null;
     return (
-      <BashResultRenderer content={output} isError={!!stderr.trim() && !stdout.trim()} />
+      <BashResultRenderer
+        content={output}
+        isError={!!stderr.trim() && !stdout.trim()}
+      />
     );
   }
 
@@ -530,29 +642,67 @@ const MessageBlock = memo(function MessageBlock(props: MessageBlockProps) {
           ) : (
             <div className="flex flex-col gap-1">
               {visibleTextBlocks.map((block, index) => (
-                <ContentBlockRenderer key={index} block={block} isUser={isUser} toolMap={toolMap} sessionId={sessionId} subagentMap={subagentMap} onNavigateSession={onNavigateSession} onOpenFile={onOpenFile} questionPending={questionPending} taskNotifications={taskNotifications} toolResultMap={toolResultMap} taskSubjects={taskSubjects} highlightedTaskId={highlightedTaskId} onHighlightTask={onHighlightTask} toolDurationMap={toolDurationMap} />
+                <ContentBlockRenderer
+                  key={index}
+                  block={block}
+                  isUser={isUser}
+                  toolMap={toolMap}
+                  sessionId={sessionId}
+                  subagentMap={subagentMap}
+                  onNavigateSession={onNavigateSession}
+                  onOpenFile={onOpenFile}
+                  questionPending={questionPending}
+                  taskNotifications={taskNotifications}
+                  toolResultMap={toolResultMap}
+                  taskSubjects={taskSubjects}
+                  highlightedTaskId={highlightedTaskId}
+                  onHighlightTask={onHighlightTask}
+                  toolDurationMap={toolDurationMap}
+                />
               ))}
             </div>
           )}
         </MessageContent>
       </Message>
 
-      {!isUser && (() => {
-        const plainText = typeof content === "string"
-          ? content
-          : (Array.isArray(content) ? content.filter((b) => b.type === "text" && b.text).map((b) => b.text).join("\n") : "");
-        return plainText.trim() ? (
-          <div className="flex justify-start gap-0.5 mt-0.5">
-            <TtsButton text={plainText} />
-            <ShareButton text={plainText} />
-          </div>
-        ) : null;
-      })()}
+      {!isUser &&
+        (() => {
+          const plainText =
+            typeof content === "string"
+              ? content
+              : Array.isArray(content)
+                ? content
+                    .filter((b) => b.type === "text" && b.text)
+                    .map((b) => b.text)
+                    .join("\n")
+                : "";
+          return plainText.trim() ? (
+            <div className="flex justify-start gap-0.5 mt-0.5">
+              <TtsButton text={plainText} />
+              <ShareButton text={plainText} />
+            </div>
+          ) : null;
+        })()}
 
       {hasTools && (
         <div className="flex flex-col gap-1 mt-1 empty:hidden">
           {toolBlocks.map((block, index) => (
-            <ContentBlockRenderer key={index} block={block} toolMap={toolMap} sessionId={sessionId} subagentMap={subagentMap} onNavigateSession={onNavigateSession} onOpenFile={onOpenFile} questionPending={questionPending} taskNotifications={taskNotifications} toolResultMap={toolResultMap} taskSubjects={taskSubjects} highlightedTaskId={highlightedTaskId} onHighlightTask={onHighlightTask} toolDurationMap={toolDurationMap} />
+            <ContentBlockRenderer
+              key={index}
+              block={block}
+              toolMap={toolMap}
+              sessionId={sessionId}
+              subagentMap={subagentMap}
+              onNavigateSession={onNavigateSession}
+              onOpenFile={onOpenFile}
+              questionPending={questionPending}
+              taskNotifications={taskNotifications}
+              toolResultMap={toolResultMap}
+              taskSubjects={taskSubjects}
+              highlightedTaskId={highlightedTaskId}
+              onHighlightTask={onHighlightTask}
+              toolDurationMap={toolDurationMap}
+            />
           ))}
         </div>
       )}
@@ -570,7 +720,10 @@ interface ContentBlockRendererProps {
   onNavigateSession?: (sessionId: string) => void;
   onOpenFile?: (filePath: string) => void;
   questionPending?: boolean;
-  taskNotifications?: Map<string, { status: string; summary: string; toolUseId?: string }>;
+  taskNotifications?: Map<
+    string,
+    { status: string; summary: string; toolUseId?: string }
+  >;
   toolResultMap?: Map<string, { content: string; isError: boolean }>;
   taskSubjects?: Map<string, string>;
   highlightedTaskId?: string | null;
@@ -621,9 +774,12 @@ function getFilePathPreview(filePath: string): string {
 type PreviewHandler = (input: Record<string, unknown>) => string | null;
 
 const TOOL_PREVIEW_HANDLERS: Record<string, PreviewHandler> = {
-  read: (input) => input.file_path ? getFilePathPreview(String(input.file_path)) : null,
-  edit: (input) => input.file_path ? getFilePathPreview(String(input.file_path)) : null,
-  write: (input) => input.file_path ? getFilePathPreview(String(input.file_path)) : null,
+  read: (input) =>
+    input.file_path ? getFilePathPreview(String(input.file_path)) : null,
+  edit: (input) =>
+    input.file_path ? getFilePathPreview(String(input.file_path)) : null,
+  write: (input) =>
+    input.file_path ? getFilePathPreview(String(input.file_path)) : null,
   bash: (input) => {
     if (!input.command) {
       return null;
@@ -631,12 +787,15 @@ const TOOL_PREVIEW_HANDLERS: Record<string, PreviewHandler> = {
     const cmd = String(input.command);
     return cmd.length > 50 ? cmd.slice(0, 50) + "..." : cmd;
   },
-  grep: (input) => input.pattern ? `"${String(input.pattern)}"` : null,
-  glob: (input) => input.pattern ? String(input.pattern) : null,
-  task: (input) => input.description ? String(input.description) : null,
+  grep: (input) => (input.pattern ? `"${String(input.pattern)}"` : null),
+  glob: (input) => (input.pattern ? String(input.pattern) : null),
+  task: (input) => (input.description ? String(input.description) : null),
 };
 
-function getToolPreview(toolName: string, input: Record<string, unknown> | undefined): string | null {
+function getToolPreview(
+  toolName: string,
+  input: Record<string, unknown> | undefined,
+): string | null {
   if (!input) {
     return null;
   }
@@ -671,27 +830,64 @@ interface ToolInputRendererProps {
 }
 
 function ToolInputRenderer(props: ToolInputRendererProps) {
-  const { toolName, input, sessionId, agentId, status, duration, onOpenFile } = props;
+  const { toolName, input, sessionId, agentId, status, duration, onOpenFile } =
+    props;
   const name = toolName.toLowerCase();
 
   if (name === "todowrite" && input.todos) {
-    return <TodoRenderer todos={input.todos as Array<{ content: string; status: "pending" | "in_progress" | "completed" }>} />;
+    return (
+      <TodoRenderer
+        todos={
+          input.todos as Array<{
+            content: string;
+            status: "pending" | "in_progress" | "completed";
+          }>
+        }
+      />
+    );
   }
 
   if (name === "edit" && input.file_path) {
-    return <EditRenderer input={input as { file_path: string; old_string: string; new_string: string }} onOpenFile={onOpenFile} />;
+    return (
+      <EditRenderer
+        input={
+          input as { file_path: string; old_string: string; new_string: string }
+        }
+        onOpenFile={onOpenFile}
+      />
+    );
   }
 
   if (name === "write" && input.file_path) {
-    return <WriteRenderer input={input as { file_path: string; content: string }} onOpenFile={onOpenFile} />;
+    return (
+      <WriteRenderer
+        input={input as { file_path: string; content: string }}
+        onOpenFile={onOpenFile}
+      />
+    );
   }
 
   if (name === "bash" && input.command) {
-    return <BashRenderer input={input as { command: string; description?: string }} />;
+    return (
+      <BashRenderer
+        input={input as { command: string; description?: string }}
+      />
+    );
   }
 
   if (name === "grep" && input.pattern) {
-    return <GrepRenderer input={input as { pattern: string; path?: string; glob?: string; type?: string }} />;
+    return (
+      <GrepRenderer
+        input={
+          input as {
+            pattern: string;
+            path?: string;
+            glob?: string;
+            type?: string;
+          }
+        }
+      />
+    );
   }
 
   if (name === "glob" && input.pattern) {
@@ -699,15 +895,50 @@ function ToolInputRenderer(props: ToolInputRendererProps) {
   }
 
   if (name === "read" && input.file_path) {
-    return <ReadRenderer input={input as { file_path: string; offset?: number; limit?: number }} onOpenFile={onOpenFile} />;
+    return (
+      <ReadRenderer
+        input={input as { file_path: string; offset?: number; limit?: number }}
+        onOpenFile={onOpenFile}
+      />
+    );
   }
 
   if (name === "askuserquestion" && input.questions) {
-    return <AskQuestionRenderer input={input as { questions: Array<{ header: string; question: string; options: Array<{ label: string; description: string }>; multiSelect: boolean }> }} />;
+    return (
+      <AskQuestionRenderer
+        input={
+          input as {
+            questions: Array<{
+              header: string;
+              question: string;
+              options: Array<{ label: string; description: string }>;
+              multiSelect: boolean;
+            }>;
+          }
+        }
+      />
+    );
   }
 
   if (name === "task" && input.prompt) {
-    return <TaskRenderer input={input as { description: string; prompt: string; subagent_type: string; model?: string; run_in_background?: boolean; resume?: string }} sessionId={sessionId} agentId={agentId} status={status} duration={duration} />;
+    return (
+      <TaskRenderer
+        input={
+          input as {
+            description: string;
+            prompt: string;
+            subagent_type: string;
+            model?: string;
+            run_in_background?: boolean;
+            resume?: string;
+          }
+        }
+        sessionId={sessionId}
+        agentId={agentId}
+        status={status}
+        duration={duration}
+      />
+    );
   }
 
   return (
@@ -747,7 +978,9 @@ function ToolResultRenderer(props: ToolResultRendererProps) {
     return (
       <div className="flex items-center gap-2 px-3 py-2 bg-card border border-border rounded-lg mt-2">
         <Check size={14} className="text-green-600" />
-        <span className="text-xs text-muted-foreground">Completed successfully</span>
+        <span className="text-xs text-muted-foreground">
+          Completed successfully
+        </span>
       </div>
     );
   }
@@ -765,13 +998,32 @@ function ToolResultRenderer(props: ToolResultRendererProps) {
       }`}
     >
       {displayContent}
-      {truncated && <span className="text-muted-foreground">... ({content.length - maxLength} more chars)</span>}
+      {truncated && (
+        <span className="text-muted-foreground">
+          ... ({content.length - maxLength} more chars)
+        </span>
+      )}
     </pre>
   );
 }
 
 function ContentBlockRenderer(props: ContentBlockRendererProps) {
-  const { block, isUser, toolMap, sessionId, subagentMap, onNavigateSession, onOpenFile, questionPending, taskNotifications, toolResultMap, taskSubjects, highlightedTaskId, onHighlightTask, toolDurationMap } = props;
+  const {
+    block,
+    isUser,
+    toolMap,
+    sessionId,
+    subagentMap,
+    onNavigateSession,
+    onOpenFile,
+    questionPending,
+    taskNotifications,
+    toolResultMap,
+    taskSubjects,
+    highlightedTaskId,
+    onHighlightTask,
+    toolDurationMap,
+  } = props;
   const [expanded, setExpanded] = useState(false);
 
   if (block.type === "text" && block.text) {
@@ -781,7 +1033,9 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
     }
 
     // Collapse skill prompt content (injected as a large user text block)
-    const skillMatch = sanitized.match(/^Base directory for this skill:\s*\S+\s*\n+#\s+(.+)/);
+    const skillMatch = sanitized.match(
+      /^Base directory for this skill:\s*\S+\s*\n+#\s+(.+)/,
+    );
     if (skillMatch) {
       return (
         <div className={expanded ? "w-full" : ""}>
@@ -791,7 +1045,9 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
           >
             <Wrench size={12} className="opacity-70" />
             <span className="font-medium">Skill: {skillMatch[1]}</span>
-            <span className="text-[10px] opacity-40 ml-0.5">{expanded ? "▼" : "▶"}</span>
+            <span className="text-[10px] opacity-40 ml-0.5">
+              {expanded ? "▼" : "▶"}
+            </span>
           </button>
           {expanded && (
             <div className="mt-2 rounded-lg border border-border bg-card/80 p-3">
@@ -815,7 +1071,9 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
           >
             <FileCode2 size={12} className="opacity-70" />
             <span className="font-medium">Plan implementation</span>
-            <span className="text-[10px] opacity-40 ml-0.5">{expanded ? "▼" : "▶"}</span>
+            <span className="text-[10px] opacity-40 ml-0.5">
+              {expanded ? "▼" : "▶"}
+            </span>
           </button>
           {expanded && (
             <div className="mt-2 rounded-lg border border-border bg-card/80 p-3">
@@ -835,9 +1093,7 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
         </div>
       );
     }
-    return (
-      <RichMessageResponse>{sanitized}</RichMessageResponse>
-    );
+    return <RichMessageResponse>{sanitized}</RichMessageResponse>;
   }
 
   if (block.type === "thinking" && block.thinking) {
@@ -853,7 +1109,9 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
 
   if (block.type === "tool_use") {
     const input =
-      block.input && typeof block.input === "object" ? block.input as Record<string, unknown> : undefined;
+      block.input && typeof block.input === "object"
+        ? (block.input as Record<string, unknown>)
+        : undefined;
     const hasInput = input && Object.keys(input).length > 0;
     const Icon = getToolIcon(block.name || "");
     const preview = getToolPreview(block.name || "", input);
@@ -872,9 +1130,11 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
     // ExitPlanMode: render inline plan card
     if (toolName === "exitplanmode" && input) {
       const plan = typeof input.plan === "string" ? input.plan : null;
-      const result = block.id && toolResultMap ? toolResultMap.get(block.id) : undefined;
+      const result =
+        block.id && toolResultMap ? toolResultMap.get(block.id) : undefined;
       const approved = result && !result.isError;
-      const feedbackMatch = result?.isError && result.content.match(/the user said:\n(.+)/is);
+      const feedbackMatch =
+        result?.isError && result.content.match(/the user said:\n(.+)/is);
       const feedback = feedbackMatch ? feedbackMatch[1].trim() : null;
       const pendingApproval = !result;
       const showPlan = expanded || pendingApproval;
@@ -894,8 +1154,16 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
             <FileCode2 size={12} className="opacity-70" />
             <span className="font-medium">Plan</span>
             {approved && <Check size={12} className="text-green-600" />}
-            {feedback && <span className="text-muted-foreground font-normal truncate max-w-[200px]">{feedback}</span>}
-            {plan && <span className="text-[10px] opacity-40 ml-0.5">{showPlan ? "▼" : "▶"}</span>}
+            {feedback && (
+              <span className="text-muted-foreground font-normal truncate max-w-[200px]">
+                {feedback}
+              </span>
+            )}
+            {plan && (
+              <span className="text-[10px] opacity-40 ml-0.5">
+                {showPlan ? "▼" : "▶"}
+              </span>
+            )}
             {block.id && toolDurationMap?.get(block.id) != null && (
               <span className="text-muted-foreground/60 font-normal ml-0.5">
                 {formatDuration(toolDurationMap.get(block.id)!)}
@@ -915,8 +1183,16 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
 
     // Hide background Bash tasks while still running — shown in the bottom bar
     // But keep Task subagents visible inline (they don't appear in the bottom bar)
-    const isBgParent = block.id && taskNotifications && [...taskNotifications.values()].some(n => n.toolUseId === block.id);
-    if (input?.run_in_background && block.id && !isBgParent && toolName !== "task") {
+    const isBgParent =
+      block.id &&
+      taskNotifications &&
+      [...taskNotifications.values()].some((n) => n.toolUseId === block.id);
+    if (
+      input?.run_in_background &&
+      block.id &&
+      !isBgParent &&
+      toolName !== "task"
+    ) {
       return null;
     }
 
@@ -927,11 +1203,15 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
     if (toolName === "taskcreate" && input) {
       const subj = String(input.subject);
       // Reverse lookup: find taskId from subject
-      const tid = taskSubjects ? [...taskSubjects.entries()].find(([, s]) => s === subj)?.[0] : undefined;
+      const tid = taskSubjects
+        ? [...taskSubjects.entries()].find(([, s]) => s === subj)?.[0]
+        : undefined;
       const isHighlighted = tid != null && highlightedTaskId === tid;
       return (
         <button
-          onClick={() => onHighlightTask?.(isHighlighted ? null : tid ?? null)}
+          onClick={() =>
+            onHighlightTask?.(isHighlighted ? null : (tid ?? null))
+          }
           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] border cursor-pointer transition-all ${
             isHighlighted
               ? "bg-accent text-foreground border-ring ring-1 ring-ring/30"
@@ -996,22 +1276,36 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
       toolName === "askuserquestion" ||
       toolName === "task";
 
-    const shouldAutoExpand = toolName === "todowrite" || toolName === "askuserquestion" || toolName === "task";
+    const shouldAutoExpand =
+      toolName === "todowrite" ||
+      toolName === "askuserquestion" ||
+      toolName === "task";
     const isExpanded = expanded || shouldAutoExpand;
 
-    const isBgRunning = !!(input?.run_in_background && block.id && taskNotifications && !taskNotifications.has(
-      // Find taskId for this tool_use_id — reverse lookup from taskNotifications
-      [...taskNotifications.entries()].find(([, n]) => n.toolUseId === block.id)?.[0] || ""
-    ));
+    const isBgRunning = !!(
+      input?.run_in_background &&
+      block.id &&
+      taskNotifications &&
+      !taskNotifications.has(
+        // Find taskId for this tool_use_id — reverse lookup from taskNotifications
+        [...taskNotifications.entries()].find(
+          ([, n]) => n.toolUseId === block.id,
+        )?.[0] || "",
+      )
+    );
     // A bg task that launched but hasn't received its notification yet
     const isBgPending = !!(input?.run_in_background && block.id && !isBgParent);
 
     // Result status from toolResultMap
-    const toolResult = block.id && toolResultMap ? toolResultMap.get(block.id) : undefined;
+    const toolResult =
+      block.id && toolResultMap ? toolResultMap.get(block.id) : undefined;
     // For bg tasks, the notification status determines the dot color, not the immediate tool_result
-    const bgNotificationStatus = isBgParent && block.id && taskNotifications
-      ? [...taskNotifications.entries()].find(([, n]) => n.toolUseId === block.id)?.[1]
-      : undefined;
+    const bgNotificationStatus =
+      isBgParent && block.id && taskNotifications
+        ? [...taskNotifications.entries()].find(
+            ([, n]) => n.toolUseId === block.id,
+          )?.[1]
+        : undefined;
 
     const statusDot = isBgPending ? (
       <span className="relative flex h-1.5 w-1.5 shrink-0">
@@ -1019,7 +1313,8 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
         <span className="relative inline-flex rounded-full h-1.5 w-1.5 bg-muted-foreground" />
       </span>
     ) : bgNotificationStatus ? (
-      bgNotificationStatus.status === "failed" || bgNotificationStatus.status === "killed" ? (
+      bgNotificationStatus.status === "failed" ||
+      bgNotificationStatus.status === "killed" ? (
         <span className="w-1.5 h-1.5 bg-red-600 rounded-full shrink-0" />
       ) : (
         <span className="w-1.5 h-1.5 bg-green-600 rounded-full shrink-0" />
@@ -1038,16 +1333,43 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
     );
 
     // Task tools: skip the pill, render TaskRenderer directly with status
-    if (shouldAutoExpand && toolName === "task" && hasInput && hasSpecialRenderer) {
+    if (
+      shouldAutoExpand &&
+      toolName === "task" &&
+      hasInput &&
+      hasSpecialRenderer
+    ) {
       return (
-        <div className="w-full" {...(block.id ? { "data-tool-use-id": block.id } : {})}>
-          <ToolInputRenderer toolName={block.name || ""} input={input} sessionId={sessionId} agentId={block.id && subagentMap ? subagentMap.get(block.id) : undefined} status={toolResult ? (toolResult.isError ? "error" : "done") : undefined} duration={block.id && toolDurationMap?.get(block.id) != null ? toolDurationMap.get(block.id) : undefined} onOpenFile={onOpenFile} />
+        <div
+          className="w-full"
+          {...(block.id ? { "data-tool-use-id": block.id } : {})}
+        >
+          <ToolInputRenderer
+            toolName={block.name || ""}
+            input={input}
+            sessionId={sessionId}
+            agentId={
+              block.id && subagentMap ? subagentMap.get(block.id) : undefined
+            }
+            status={
+              toolResult ? (toolResult.isError ? "error" : "done") : undefined
+            }
+            duration={
+              block.id && toolDurationMap?.get(block.id) != null
+                ? toolDurationMap.get(block.id)
+                : undefined
+            }
+            onOpenFile={onOpenFile}
+          />
         </div>
       );
     }
 
     return (
-      <div className={isExpanded ? "w-full" : ""} {...(block.id ? { "data-tool-use-id": block.id } : {})}>
+      <div
+        className={isExpanded ? "w-full" : ""}
+        {...(block.id ? { "data-tool-use-id": block.id } : {})}
+      >
         <button
           onClick={() => !shouldAutoExpand && setExpanded(!expanded)}
           className={`inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] transition-colors border cursor-pointer ${
@@ -1083,7 +1405,15 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
           )}
         </button>
         {isExpanded && hasInput && hasSpecialRenderer ? (
-          <ToolInputRenderer toolName={block.name || ""} input={input} sessionId={sessionId} agentId={block.id && subagentMap ? subagentMap.get(block.id) : undefined} onOpenFile={onOpenFile} />
+          <ToolInputRenderer
+            toolName={block.name || ""}
+            input={input}
+            sessionId={sessionId}
+            agentId={
+              block.id && subagentMap ? subagentMap.get(block.id) : undefined
+            }
+            onOpenFile={onOpenFile}
+          />
         ) : (
           expanded &&
           hasInput && (
@@ -1093,7 +1423,11 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
           )
         )}
         {expanded && toolResult && (
-          <ToolResultRenderer toolName={block.name || ""} content={sanitizeText(toolResult.content)} isError={toolResult.isError} />
+          <ToolResultRenderer
+            toolName={block.name || ""}
+            content={sanitizeText(toolResult.content)}
+            isError={toolResult.isError}
+          />
         )}
       </div>
     );
@@ -1110,14 +1444,21 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
     const previewLength = 60;
     const contentPreview =
       hasContent && !expanded
-        ? resultContent.slice(0, previewLength) + (resultContent.length > previewLength ? "..." : "")
+        ? resultContent.slice(0, previewLength) +
+          (resultContent.length > previewLength ? "..." : "")
         : null;
 
-    const toolName = block.tool_use_id && toolMap ? toolMap.get(block.tool_use_id) || "" : "";
+    const toolName =
+      block.tool_use_id && toolMap ? toolMap.get(block.tool_use_id) || "" : "";
 
     // Hide task management tool results — the sticky TaskListWidget handles display
     const tn = toolName.toLowerCase();
-    if (tn === "taskcreate" || tn === "taskupdate" || tn === "tasklist" || tn === "taskget") {
+    if (
+      tn === "taskcreate" ||
+      tn === "taskupdate" ||
+      tn === "tasklist" ||
+      tn === "taskget"
+    ) {
       return null;
     }
 
@@ -1127,15 +1468,19 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
     }
 
     // Match background task result and attach notification pill
-    const bgMatch = rawContent.match(/Command running in background with ID:\s*([a-z0-9]+)/);
+    const bgMatch = rawContent.match(
+      /Command running in background with ID:\s*([a-z0-9]+)/,
+    );
     const bgNotification = bgMatch && taskNotifications?.get(bgMatch[1]);
 
     // AskUserQuestion result: "User has answered your questions: "Q"="A"..."
-    const askMatch = resultContent.match(/^User has answered your questions:\s*(.+?)\.\s*You can now continue/);
+    const askMatch = resultContent.match(
+      /^User has answered your questions:\s*(.+?)\.\s*You can now continue/,
+    );
     if (askMatch) {
       // Extract all "question"="answer" pairs
       const pairs = [...askMatch[1].matchAll(/"([^"]+)"="([^"]+)"/g)];
-      const answers = pairs.map(m => m[2]);
+      const answers = pairs.map((m) => m[2]);
       const answerText = answers.length > 0 ? answers.join(", ") : askMatch[1];
       return (
         <div className="inline-flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-[11px] bg-secondary text-foreground border border-border">
@@ -1145,8 +1490,11 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
       );
     }
 
-    const isDenied = isError && resultContent.match(/user (denied|rejected|chose not to)/i);
-    const isInterrupted = isError && resultContent.match(/doesn't want to proceed|does not want to proceed/i);
+    const isDenied =
+      isError && resultContent.match(/user (denied|rejected|chose not to)/i);
+    const isInterrupted =
+      isError &&
+      resultContent.match(/doesn't want to proceed|does not want to proceed/i);
 
     if (isDenied) {
       return (
@@ -1205,7 +1553,11 @@ function ContentBlockRenderer(props: ContentBlockRendererProps) {
       <div className={expanded ? "w-full" : ""}>
         {resultButton}
         {expanded && hasContent && (
-          <ToolResultRenderer toolName={toolName} content={resultContent} isError={isError} />
+          <ToolResultRenderer
+            toolName={toolName}
+            content={resultContent}
+            isError={isError}
+          />
         )}
       </div>
     );

@@ -1,6 +1,15 @@
 import { useState, useCallback } from "react";
 import type { ConversationMessage } from "@claude-run/api";
-import { Bot, Play, Pause, ArrowRight, RefreshCw, ChevronDown, ChevronRight, MessageSquareText } from "lucide-react";
+import {
+  Bot,
+  Play,
+  Pause,
+  ArrowRight,
+  RefreshCw,
+  ChevronDown,
+  ChevronRight,
+  MessageSquareText,
+} from "lucide-react";
 import MessageBlock from "../message-block";
 
 interface TaskInput {
@@ -44,7 +53,9 @@ function formatDuration(ms: number): string {
 export function TaskRenderer(props: TaskRendererProps) {
   const { input, sessionId, agentId, status, duration } = props;
   const [showConversation, setShowConversation] = useState(false);
-  const [subMessages, setSubMessages] = useState<ConversationMessage[] | null>(null);
+  const [subMessages, setSubMessages] = useState<ConversationMessage[] | null>(
+    null,
+  );
   const [loadingMessages, setLoadingMessages] = useState(false);
 
   const toggleConversation = useCallback(() => {
@@ -105,11 +116,15 @@ export function TaskRenderer(props: TaskRendererProps) {
           {input.description && (
             <>
               <ArrowRight size={10} className="text-muted-foreground/60" />
-              <span className="text-xs text-muted-foreground">{input.description}</span>
+              <span className="text-xs text-muted-foreground">
+                {input.description}
+              </span>
             </>
           )}
           {duration != null && (
-            <span className="text-[10px] text-zinc-600">{formatDuration(duration)}</span>
+            <span className="text-[10px] text-zinc-600">
+              {formatDuration(duration)}
+            </span>
           )}
           <div className="flex items-center gap-1.5 ml-auto">
             {input.resume && (
@@ -159,7 +174,13 @@ export function TaskRenderer(props: TaskRendererProps) {
               </span>
               {subMessages !== null && (
                 <span className="text-[10px] text-muted-foreground/60 ml-1">
-                  ({subMessages.filter((m) => m.type === "user" || m.type === "assistant").length} messages)
+                  (
+                  {
+                    subMessages.filter(
+                      (m) => m.type === "user" || m.type === "assistant",
+                    ).length
+                  }{" "}
+                  messages)
                 </span>
               )}
             </button>
@@ -173,7 +194,9 @@ export function TaskRenderer(props: TaskRendererProps) {
                 ) : subMessages && subMessages.length > 0 ? (
                   <div className="flex flex-col gap-1.5 pl-3 pt-2">
                     {subMessages
-                      .filter((m) => m.type === "user" || m.type === "assistant")
+                      .filter(
+                        (m) => m.type === "user" || m.type === "assistant",
+                      )
                       .map((msg, index) => (
                         <MessageBlock key={msg.uuid || index} message={msg} />
                       ))}

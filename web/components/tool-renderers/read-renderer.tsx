@@ -121,13 +121,17 @@ export function FileContentRenderer(props: FileContentRendererProps) {
       <div className="bg-card/80 border border-border rounded-lg overflow-hidden">
         <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/50">
           <FileText size={14} className="text-muted-foreground" />
-          <span className="text-xs font-medium text-foreground">File Content</span>
+          <span className="text-xs font-medium text-foreground">
+            File Content
+          </span>
           {language && (
             <span className="text-xs text-muted-foreground bg-muted px-1.5 py-0.5 rounded">
               {language}
             </span>
           )}
-          <span className="text-xs text-muted-foreground ml-auto">{lines.length} lines</span>
+          <span className="text-xs text-muted-foreground ml-auto">
+            {lines.length} lines
+          </span>
         </div>
         <div className="overflow-x-auto ">
           <table className="w-full text-xs font-mono">

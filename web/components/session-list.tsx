@@ -7,7 +7,11 @@ interface SessionListProps {
   selectedSession: string | null;
   onSelectSession: (sessionId: string) => void;
   onDeleteSession?: (sessionId: string) => void;
-  onResurrectSession?: (sessionId: string, project: string, name: string) => void;
+  onResurrectSession?: (
+    sessionId: string,
+    project: string,
+    name: string,
+  ) => void;
   loading?: boolean;
   selectedProject?: string | null;
 }
@@ -49,20 +53,37 @@ function SessionItem({
   return (
     <div
       className={`group text-left transition-colors overflow-hidden cursor-pointer ${
-        isChild ? "pl-6 pr-3 py-2 border-l-2 border-l-border ml-2 border-b border-border/20" : "px-3 py-3.5 border-b border-border/40"
+        isChild
+          ? "pl-6 pr-3 py-2 border-l-2 border-l-border ml-2 border-b border-border/20"
+          : "px-3 py-3.5 border-b border-border/40"
       } ${
-        isSelected
-          ? "bg-accent"
-          : "hover:bg-muted/60"
+        isSelected ? "bg-accent" : "hover:bg-muted/60"
       } ${isFirst ? "border-t border-t-border/40" : ""}`}
       onClick={onSelect}
     >
       <div className="flex items-center justify-between mb-1">
-        <span className={`text-[10px] text-muted-foreground font-medium flex items-center gap-1.5`}>
+        <span
+          className={`text-[10px] text-muted-foreground font-medium flex items-center gap-1.5`}
+        >
           {status === "responding" ? (
-            <svg className="w-3 h-3 text-amber-500 animate-spin flex-shrink-0" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+            <svg
+              className="w-3 h-3 text-amber-500 animate-spin flex-shrink-0"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
             </svg>
           ) : status === "permission" && session.questionData ? (
             <span className="w-1.5 h-1.5 bg-muted-foreground rounded-full flex-shrink-0 animate-pulse" />
@@ -85,12 +106,20 @@ function SessionItem({
                 <button
                   onClick={(e) => {
                     e.stopPropagation();
-                    onResurrect(session.id, session.project, session.summary || session.display);
+                    onResurrect(
+                      session.id,
+                      session.project,
+                      session.summary || session.display,
+                    );
                   }}
                   className="flex items-center justify-center h-4 w-4 rounded text-muted-foreground hover:text-green-600 dark:hover:text-green-400 hover:bg-muted transition-colors"
                   title="Resume session"
                 >
-                  <svg className="w-3 h-3" fill="currentColor" viewBox="0 0 24 24">
+                  <svg
+                    className="w-3 h-3"
+                    fill="currentColor"
+                    viewBox="0 0 24 24"
+                  >
                     <path d="M8 5v14l11-7z" />
                   </svg>
                 </button>
@@ -106,8 +135,18 @@ function SessionItem({
                   className="flex items-center justify-center h-4 w-4 rounded text-muted-foreground hover:text-red-600 dark:hover:text-red-400 hover:bg-muted transition-colors"
                   title="Delete session"
                 >
-                  <svg className="w-3.5 h-3.5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16" />
+                  <svg
+                    className="w-3.5 h-3.5"
+                    fill="none"
+                    stroke="currentColor"
+                    viewBox="0 0 24 24"
+                  >
+                    <path
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      strokeWidth={2}
+                      d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                    />
                   </svg>
                 </button>
               )}
@@ -115,12 +154,16 @@ function SessionItem({
           )}
         </span>
       </div>
-      <p className={`text-[12px] leading-snug line-clamp-2 break-words ${isChild ? "text-muted-foreground line-clamp-1" : "text-foreground"}`}>
+      <p
+        className={`text-[12px] leading-snug line-clamp-2 break-words ${isChild ? "text-muted-foreground line-clamp-1" : "text-foreground"}`}
+      >
         {session.summary || session.display}
       </p>
       <div className="flex items-center gap-1.5 mt-1">
         {(session.zellijSession || paneId) && (
-          <span className={`px-1 text-[10px] rounded ${paneVerified ? "text-green-600 bg-green-600/10" : "text-muted-foreground/60 bg-muted opacity-50"}`}>
+          <span
+            className={`px-1 text-[10px] rounded ${paneVerified ? "text-green-600 bg-green-600/10" : "text-muted-foreground/60 bg-muted opacity-50"}`}
+          >
             {session.zellijSession && paneId
               ? `${session.zellijSession}:${paneId}${!paneVerified ? "?" : ""}`
               : session.zellijSession
@@ -130,11 +173,22 @@ function SessionItem({
         )}
         {olderCount && olderCount > 0 && onToggleOlder && (
           <button
-            onClick={(e) => { e.stopPropagation(); onToggleOlder(); }}
+            onClick={(e) => {
+              e.stopPropagation();
+              onToggleOlder();
+            }}
             className="flex items-center gap-0.5 px-1 rounded text-[10px] text-muted-foreground hover:text-foreground hover:bg-muted transition-colors"
           >
-            <svg className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-90" : ""}`} fill="currentColor" viewBox="0 0 20 20">
-              <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+            <svg
+              className={`w-3 h-3 transition-transform ${isExpanded ? "rotate-90" : ""}`}
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
+              <path
+                fillRule="evenodd"
+                d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                clipRule="evenodd"
+              />
             </svg>
             {olderCount} older
           </button>
@@ -144,25 +198,38 @@ function SessionItem({
   );
 }
 
-
 const SessionList = memo(function SessionList(props: SessionListProps) {
-  const { sessions, selectedSession, onSelectSession, onDeleteSession, onResurrectSession, loading: sessionsLoading, selectedProject } = props;
+  const {
+    sessions,
+    selectedSession,
+    onSelectSession,
+    onDeleteSession,
+    onResurrectSession,
+    loading: sessionsLoading,
+    selectedProject,
+  } = props;
   const [search, setSearch] = useState("");
-  const [viewMode, setViewMode] = useState<ViewMode>(() => (localStorage.getItem("cl:viewMode") as ViewMode) || "recent");
-  const [toggledProjects, setToggledProjects] = useState<Map<string, boolean>>(new Map());
-  const [onlyActive, setOnlyActive] = useState(() => localStorage.getItem("cl:onlyActive") === "true");
+  const [viewMode, setViewMode] = useState<ViewMode>(
+    () => (localStorage.getItem("cl:viewMode") as ViewMode) || "recent",
+  );
+  const [toggledProjects, setToggledProjects] = useState<Map<string, boolean>>(
+    new Map(),
+  );
+  const [onlyActive, setOnlyActive] = useState(
+    () => localStorage.getItem("cl:onlyActive") === "true",
+  );
   const [expandedSlugs, setExpandedSlugs] = useState<Set<string>>(new Set());
 
   // Search filtering + slug parent/child grouping
   // Preserves input order from parent (already stable across SSE updates)
   const listItems = useMemo((): ListItem[] => {
-    let list = onlyActive ? sessions.filter(s => s.status) : sessions;
+    let list = onlyActive ? sessions.filter((s) => s.status) : sessions;
     if (search.trim()) {
       const query = search.toLowerCase();
       list = list.filter(
         (s) =>
           s.display.toLowerCase().includes(query) ||
-          s.projectName.toLowerCase().includes(query)
+          s.projectName.toLowerCase().includes(query),
       );
     }
     // Group sessions by slug — only show the latest, older ones go in dropdown
@@ -184,7 +251,11 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
         const group = slugGroups.get(s.slug)!;
         if (group.length > 1) {
           group.sort((a, b) => b.lastActivity - a.lastActivity);
-          result.push({ session: group[0], isChild: false, olderSessions: group.slice(1) });
+          result.push({
+            session: group[0],
+            isChild: false,
+            olderSessions: group.slice(1),
+          });
         } else {
           result.push({ session: s, isChild: false });
         }
@@ -206,8 +277,8 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
       groups.set(name, group);
     }
     return [...groups.entries()].sort((a, b) => {
-      const maxA = Math.max(...a[1].map(i => i.session.lastActivity));
-      const maxB = Math.max(...b[1].map(i => i.session.lastActivity));
+      const maxA = Math.max(...a[1].map((i) => i.session.lastActivity));
+      const maxB = Math.max(...b[1].map((i) => i.session.lastActivity));
       return maxB - maxA;
     });
   }, [listItems, viewMode]);
@@ -216,11 +287,11 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
     const userToggle = toggledProjects.get(projectName);
     if (userToggle !== undefined) return !userToggle;
     // Default: collapsed if no session has an active status
-    return !items.some(i => i.session.status);
+    return !items.some((i) => i.session.status);
   };
 
   const toggleProjectCollapse = (projectName: string, items: ListItem[]) => {
-    setToggledProjects(prev => {
+    setToggledProjects((prev) => {
       const next = new Map(prev);
       const currentlyCollapsed = isProjectCollapsed(projectName, items);
       next.set(projectName, currentlyCollapsed); // expand if collapsed, collapse if expanded
@@ -240,7 +311,9 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
       return (
         <div>
           {listItems.map(({ session, isChild, olderSessions }, index) => {
-            const isExpanded = session.slug ? expandedSlugs.has(session.slug) : false;
+            const isExpanded = session.slug
+              ? expandedSlugs.has(session.slug)
+              : false;
             return (
               <div key={session.id}>
                 <SessionItem
@@ -254,21 +327,24 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
                   hideProject
                   olderCount={olderSessions?.length}
                   isExpanded={isExpanded}
-                  onToggleOlder={session.slug ? () => toggleSlug(session.slug!) : undefined}
+                  onToggleOlder={
+                    session.slug ? () => toggleSlug(session.slug!) : undefined
+                  }
                 />
-                {isExpanded && olderSessions?.map(older => (
-                  <SessionItem
-                    key={older.id}
-                    session={older}
-                    isChild
-                    isSelected={selectedSession === older.id}
-                    isFirst={false}
-                    onSelect={() => onSelectSession(older.id)}
-                    onDelete={onDeleteSession}
-                    onResurrect={onResurrectSession}
-                    hideProject
-                  />
-                ))}
+                {isExpanded &&
+                  olderSessions?.map((older) => (
+                    <SessionItem
+                      key={older.id}
+                      session={older}
+                      isChild
+                      isSelected={selectedSession === older.id}
+                      isFirst={false}
+                      onSelect={() => onSelectSession(older.id)}
+                      onDelete={onDeleteSession}
+                      onResurrect={onResurrectSession}
+                      hideProject
+                    />
+                  ))}
               </div>
             );
           })}
@@ -286,45 +362,65 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
                 onClick={() => toggleProjectCollapse(projectName, items)}
                 className="w-full flex items-center gap-2 px-3 py-2 text-left bg-card/50 border-b border-border/40 hover:bg-muted/50 transition-colors"
               >
-                <svg className={`w-3 h-3 text-muted-foreground transition-transform flex-shrink-0 ${isCollapsed ? "" : "rotate-90"}`} fill="currentColor" viewBox="0 0 20 20">
-                  <path fillRule="evenodd" d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z" clipRule="evenodd" />
+                <svg
+                  className={`w-3 h-3 text-muted-foreground transition-transform flex-shrink-0 ${isCollapsed ? "" : "rotate-90"}`}
+                  fill="currentColor"
+                  viewBox="0 0 20 20"
+                >
+                  <path
+                    fillRule="evenodd"
+                    d="M7.293 14.707a1 1 0 010-1.414L10.586 10 7.293 6.707a1 1 0 011.414-1.414l4 4a1 1 0 010 1.414l-4 4a1 1 0 01-1.414 0z"
+                    clipRule="evenodd"
+                  />
                 </svg>
-                <span className="text-[11px] text-muted-foreground font-medium truncate">{projectName}</span>
-                <span className="text-[10px] text-muted-foreground/60 ml-auto flex-shrink-0">{items.length}</span>
+                <span className="text-[11px] text-muted-foreground font-medium truncate">
+                  {projectName}
+                </span>
+                <span className="text-[10px] text-muted-foreground/60 ml-auto flex-shrink-0">
+                  {items.length}
+                </span>
               </button>
-              {!isCollapsed && items.map(({ session, isChild, olderSessions }) => {
-                const isExpanded = session.slug ? expandedSlugs.has(session.slug) : false;
-                return (
-                  <div key={session.id}>
-                    <SessionItem
-                      session={session}
-                      isChild={isChild}
-                      isSelected={selectedSession === session.id}
-                      isFirst={false}
-                      onSelect={() => onSelectSession(session.id)}
-                      onDelete={onDeleteSession}
-                      onResurrect={onResurrectSession}
-                      hideProject
-                      olderCount={olderSessions?.length}
-                      isExpanded={isExpanded}
-                      onToggleOlder={session.slug ? () => toggleSlug(session.slug!) : undefined}
-                    />
-                    {isExpanded && olderSessions?.map(older => (
+              {!isCollapsed &&
+                items.map(({ session, isChild, olderSessions }) => {
+                  const isExpanded = session.slug
+                    ? expandedSlugs.has(session.slug)
+                    : false;
+                  return (
+                    <div key={session.id}>
                       <SessionItem
-                        key={older.id}
-                        session={older}
-                        isChild
-                        isSelected={selectedSession === older.id}
+                        session={session}
+                        isChild={isChild}
+                        isSelected={selectedSession === session.id}
                         isFirst={false}
-                        onSelect={() => onSelectSession(older.id)}
+                        onSelect={() => onSelectSession(session.id)}
                         onDelete={onDeleteSession}
                         onResurrect={onResurrectSession}
                         hideProject
+                        olderCount={olderSessions?.length}
+                        isExpanded={isExpanded}
+                        onToggleOlder={
+                          session.slug
+                            ? () => toggleSlug(session.slug!)
+                            : undefined
+                        }
                       />
-                    ))}
-                  </div>
-                );
-              })}
+                      {isExpanded &&
+                        olderSessions?.map((older) => (
+                          <SessionItem
+                            key={older.id}
+                            session={older}
+                            isChild
+                            isSelected={selectedSession === older.id}
+                            isFirst={false}
+                            onSelect={() => onSelectSession(older.id)}
+                            onDelete={onDeleteSession}
+                            onResurrect={onResurrectSession}
+                            hideProject
+                          />
+                        ))}
+                    </div>
+                  );
+                })}
             </div>
           );
         })}
@@ -333,9 +429,10 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
   };
 
   const toggleSlug = (slug: string) => {
-    setExpandedSlugs(prev => {
+    setExpandedSlugs((prev) => {
       const next = new Set(prev);
-      if (next.has(slug)) next.delete(slug); else next.add(slug);
+      if (next.has(slug)) next.delete(slug);
+      else next.add(slug);
       return next;
     });
   };
@@ -343,7 +440,9 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
   const renderRecentView = () => (
     <div>
       {listItems.map(({ session, isChild, olderSessions }, index) => {
-        const isExpanded = session.slug ? expandedSlugs.has(session.slug) : false;
+        const isExpanded = session.slug
+          ? expandedSlugs.has(session.slug)
+          : false;
         return (
           <div key={session.id}>
             <SessionItem
@@ -356,20 +455,23 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
               onResurrect={onResurrectSession}
               olderCount={olderSessions?.length}
               isExpanded={isExpanded}
-              onToggleOlder={session.slug ? () => toggleSlug(session.slug!) : undefined}
+              onToggleOlder={
+                session.slug ? () => toggleSlug(session.slug!) : undefined
+              }
             />
-            {isExpanded && olderSessions?.map(older => (
-              <SessionItem
-                key={older.id}
-                session={older}
-                isChild
-                isSelected={selectedSession === older.id}
-                isFirst={false}
-                onSelect={() => onSelectSession(older.id)}
-                onDelete={onDeleteSession}
-                onResurrect={onResurrectSession}
-              />
-            ))}
+            {isExpanded &&
+              olderSessions?.map((older) => (
+                <SessionItem
+                  key={older.id}
+                  session={older}
+                  isChild
+                  isSelected={selectedSession === older.id}
+                  isFirst={false}
+                  onSelect={() => onSelectSession(older.id)}
+                  onDelete={onDeleteSession}
+                  onResurrect={onResurrectSession}
+                />
+              ))}
           </div>
         );
       })}
@@ -423,7 +525,10 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
         </div>
         <div className="flex gap-2 items-center">
           <button
-            onClick={() => { setViewMode("recent"); localStorage.setItem("cl:viewMode", "recent"); }}
+            onClick={() => {
+              setViewMode("recent");
+              localStorage.setItem("cl:viewMode", "recent");
+            }}
             className={`px-2 py-0.5 text-[10px] rounded transition-colors ${
               viewMode === "recent"
                 ? "bg-muted text-foreground"
@@ -433,7 +538,10 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
             Recent
           </button>
           <button
-            onClick={() => { setViewMode("folder"); localStorage.setItem("cl:viewMode", "folder"); }}
+            onClick={() => {
+              setViewMode("folder");
+              localStorage.setItem("cl:viewMode", "folder");
+            }}
             className={`px-2 py-0.5 text-[10px] rounded transition-colors ${
               viewMode === "folder"
                 ? "bg-muted text-foreground"
@@ -444,7 +552,13 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
           </button>
           <span className="mx-1 h-3 w-px bg-border" />
           <button
-            onClick={() => setOnlyActive(v => { const next = !v; localStorage.setItem("cl:onlyActive", String(next)); return next; })}
+            onClick={() =>
+              setOnlyActive((v) => {
+                const next = !v;
+                localStorage.setItem("cl:onlyActive", String(next));
+                return next;
+              })
+            }
             className={`px-2 py-0.5 text-[10px] rounded transition-colors ${
               onlyActive
                 ? "bg-green-600/15 text-green-700 dark:text-green-300"
@@ -481,7 +595,11 @@ const SessionList = memo(function SessionList(props: SessionListProps) {
           </div>
         ) : listItems.length === 0 ? (
           <p className="py-8 text-center text-xs text-muted-foreground/60">
-            {isSearchActive ? "No sessions match" : onlyActive ? "No active sessions" : "No sessions found"}
+            {isSearchActive
+              ? "No sessions match"
+              : onlyActive
+                ? "No active sessions"
+                : "No sessions found"}
           </p>
         ) : viewMode === "folder" ? (
           renderFolderView()

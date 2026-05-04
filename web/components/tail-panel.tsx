@@ -19,7 +19,9 @@ export function TailPanel({ filePath, description, onClose }: TailPanelProps) {
     setDone(false);
     setError(null);
 
-    const es = new EventSource(`/api/tail?path=${encodeURIComponent(filePath)}`);
+    const es = new EventSource(
+      `/api/tail?path=${encodeURIComponent(filePath)}`,
+    );
 
     es.addEventListener("content", (e) => {
       setContent((prev) => prev + e.data);
@@ -60,7 +62,9 @@ export function TailPanel({ filePath, description, onClose }: TailPanelProps) {
       <div className="w-full max-w-3xl mx-4 max-h-[80vh] flex flex-col rounded-xl border border-border bg-card shadow-2xl overflow-hidden">
         <div className="flex items-center gap-2 px-4 py-2.5 border-b border-border bg-card/80">
           <Terminal size={14} className="text-muted-foreground shrink-0" />
-          <span className="text-xs text-foreground/80 truncate flex-1">{description}</span>
+          <span className="text-xs text-foreground/80 truncate flex-1">
+            {description}
+          </span>
           {done && (
             <span className="text-[10px] font-medium px-1.5 py-0.5 rounded bg-green-600/10 text-green-600 shrink-0">
               Done

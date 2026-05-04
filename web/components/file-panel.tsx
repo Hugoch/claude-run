@@ -1,5 +1,25 @@
-import React, { useState, useEffect, useMemo, useCallback, useRef } from "react";
-import { X, FileCode, Loader2, AlertCircle, ChevronRight, Folder, ArrowLeft, FolderOpen, MessageSquarePlus, ChevronUp, ChevronDown, Search, WrapText } from "lucide-react";
+import React, {
+  useState,
+  useEffect,
+  useMemo,
+  useCallback,
+  useRef,
+} from "react";
+import {
+  X,
+  FileCode,
+  Loader2,
+  AlertCircle,
+  ChevronRight,
+  Folder,
+  ArrowLeft,
+  FolderOpen,
+  MessageSquarePlus,
+  ChevronUp,
+  ChevronDown,
+  Search,
+  WrapText,
+} from "lucide-react";
 
 interface FilePanelProps {
   filePath: string;
@@ -36,7 +56,15 @@ function relativePath(fullPath: string, project: string): string {
   return fullPath;
 }
 
-function Breadcrumbs({ path, project, onNavigate }: { path: string; project: string; onNavigate: (dir: string) => void }) {
+function Breadcrumbs({
+  path,
+  project,
+  onNavigate,
+}: {
+  path: string;
+  project: string;
+  onNavigate: (dir: string) => void;
+}) {
   const rel = relativePath(path, project);
   const segments = rel ? rel.split("/") : [];
 
@@ -77,7 +105,12 @@ interface GitChangedFiles {
   deleted: Set<string>;
 }
 
-function BrowseView({ dirPath, project, onOpenFile, onNavigate }: {
+function BrowseView({
+  dirPath,
+  project,
+  onOpenFile,
+  onNavigate,
+}: {
   dirPath: string;
   project: string;
   onOpenFile: (filePath: string, returnDir: string) => void;
@@ -91,7 +124,9 @@ function BrowseView({ dirPath, project, onOpenFile, onNavigate }: {
   useEffect(() => {
     setLoading(true);
     setError(null);
-    fetch(`/api/files?path=${encodeURIComponent(dirPath)}&project=${encodeURIComponent(project)}`)
+    fetch(
+      `/api/files?path=${encodeURIComponent(dirPath)}&project=${encodeURIComponent(project)}`,
+    )
       .then((r) => {
         if (!r.ok) {
           if (r.status === 403) throw new Error("Access denied");
@@ -108,7 +143,7 @@ function BrowseView({ dirPath, project, onOpenFile, onNavigate }: {
   // Fetch changed files once per project
   useEffect(() => {
     fetch(`/api/git/changed-files?project=${encodeURIComponent(project)}`)
-      .then((r) => r.ok ? r.json() : null)
+      .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
         if (data) {
           setChanged({
@@ -147,7 +182,10 @@ function BrowseView({ dirPath, project, onOpenFile, onNavigate }: {
   }
 
   // Check if a file or any file inside a directory is changed
-  const getStatus = (name: string, isDir: boolean): "added" | "modified" | "deleted" | null => {
+  const getStatus = (
+    name: string,
+    isDir: boolean,
+  ): "added" | "modified" | "deleted" | null => {
     if (!changed) return null;
     const rel = relativePath(dirPath + "/" + name, project);
     if (!isDir) {
@@ -158,9 +196,15 @@ function BrowseView({ dirPath, project, onOpenFile, onNavigate }: {
     }
     // For directories, check if any file inside is changed
     const prefix = rel + "/";
-    for (const f of changed.added) { if (f.startsWith(prefix)) return "added"; }
-    for (const f of changed.modified) { if (f.startsWith(prefix)) return "modified"; }
-    for (const f of changed.deleted) { if (f.startsWith(prefix)) return "deleted"; }
+    for (const f of changed.added) {
+      if (f.startsWith(prefix)) return "added";
+    }
+    for (const f of changed.modified) {
+      if (f.startsWith(prefix)) return "modified";
+    }
+    for (const f of changed.deleted) {
+      if (f.startsWith(prefix)) return "deleted";
+    }
     return null;
   };
 
@@ -201,7 +245,11 @@ function BrowseView({ dirPath, project, onOpenFile, onNavigate }: {
             ) : (
               <FileCode size={14} className={`${iconColor(status)} shrink-0`} />
             )}
-            <span className={`text-xs font-mono truncate flex-1 ${statusColor(status)}`}>{entry.name}</span>
+            <span
+              className={`text-xs font-mono truncate flex-1 ${statusColor(status)}`}
+            >
+              {entry.name}
+            </span>
             {!entry.is_dir && status && status !== "deleted" && (
               <button
                 onClick={(e) => {
@@ -215,14 +263,21 @@ function BrowseView({ dirPath, project, onOpenFile, onNavigate }: {
               </button>
             )}
             {status && (
-              <span className={`text-[9px] font-medium shrink-0 ${statusColor(status)}`}>
+              <span
+                className={`text-[9px] font-medium shrink-0 ${statusColor(status)}`}
+              >
                 {status === "added" ? "A" : status === "modified" ? "M" : "D"}
               </span>
             )}
             {entry.is_dir ? (
-              <ChevronRight size={14} className="text-muted-foreground/40 shrink-0" />
+              <ChevronRight
+                size={14}
+                className="text-muted-foreground/40 shrink-0"
+              />
             ) : entry.size != null && !status ? (
-              <span className="text-[10px] text-muted-foreground/50 shrink-0">{formatSize(entry.size)}</span>
+              <span className="text-[10px] text-muted-foreground/50 shrink-0">
+                {formatSize(entry.size)}
+              </span>
             ) : null}
           </button>
         );
@@ -233,28 +288,51 @@ function BrowseView({ dirPath, project, onOpenFile, onNavigate }: {
 
 // --- Syntax highlighting ---
 
-type TokenType = "keyword" | "string" | "comment" | "number" | "type" | "attr" | "punctuation";
+type TokenType =
+  | "keyword"
+  | "string"
+  | "comment"
+  | "number"
+  | "type"
+  | "attr"
+  | "punctuation";
 
 const TOKEN_COLORS: Record<TokenType, [string, string]> = {
   // [light, dark]
-  keyword:     ["#d32f2f", "#ff7b72"],
-  string:      ["#2e7d32", "#a5d6ff"],
-  comment:     ["#6a737d", "#8b949e"],
-  number:      ["#1565c0", "#79c0ff"],
-  type:        ["#6f42c1", "#d2a8ff"],
-  attr:        ["#e36209", "#ffa657"],
+  keyword: ["#d32f2f", "#ff7b72"],
+  string: ["#2e7d32", "#a5d6ff"],
+  comment: ["#6a737d", "#8b949e"],
+  number: ["#1565c0", "#79c0ff"],
+  type: ["#6f42c1", "#d2a8ff"],
+  attr: ["#e36209", "#ffa657"],
   punctuation: ["#6e7781", "#8b949e"],
 };
 
 function getLang(filePath: string): string | null {
   const ext = filePath.split(".").pop()?.toLowerCase();
   const map: Record<string, string> = {
-    ts: "ts", tsx: "ts", js: "ts", jsx: "ts", mjs: "ts", cjs: "ts",
-    rs: "rust", py: "python", go: "go",
-    json: "json", toml: "toml", yaml: "yaml", yml: "yaml",
-    html: "html", css: "css", scss: "css",
-    sh: "shell", bash: "shell", zsh: "shell", fish: "shell",
-    md: "md", mdx: "md",
+    ts: "ts",
+    tsx: "ts",
+    js: "ts",
+    jsx: "ts",
+    mjs: "ts",
+    cjs: "ts",
+    rs: "rust",
+    py: "python",
+    go: "go",
+    json: "json",
+    toml: "toml",
+    yaml: "yaml",
+    yml: "yaml",
+    html: "html",
+    css: "css",
+    scss: "css",
+    sh: "shell",
+    bash: "shell",
+    zsh: "shell",
+    fish: "shell",
+    md: "md",
+    mdx: "md",
     sql: "sql",
     dockerfile: "shell",
   };
@@ -267,21 +345,267 @@ function getLang(filePath: string): string | null {
 }
 
 const KEYWORDS: Record<string, Set<string>> = {
-  ts: new Set(["import","export","from","const","let","var","function","return","if","else","for","while","do","switch","case","break","continue","new","this","class","extends","implements","interface","type","enum","async","await","try","catch","finally","throw","typeof","instanceof","in","of","default","yield","void","null","undefined","true","false","as","is","readonly","declare","abstract","static","private","public","protected","super","delete","debugger","satisfies"]),
-  rust: new Set(["fn","let","mut","const","if","else","for","while","loop","match","return","use","mod","pub","crate","self","super","struct","enum","impl","trait","where","async","await","move","ref","type","as","in","unsafe","extern","dyn","true","false","Some","None","Ok","Err","Self"]),
-  python: new Set(["def","class","if","elif","else","for","while","return","import","from","as","try","except","finally","raise","with","yield","lambda","pass","break","continue","and","or","not","in","is","None","True","False","self","async","await","nonlocal","global","assert","del"]),
-  go: new Set(["func","var","const","if","else","for","range","return","package","import","type","struct","interface","map","chan","go","defer","select","case","switch","break","continue","default","fallthrough","nil","true","false","make","append","len","cap"]),
+  ts: new Set([
+    "import",
+    "export",
+    "from",
+    "const",
+    "let",
+    "var",
+    "function",
+    "return",
+    "if",
+    "else",
+    "for",
+    "while",
+    "do",
+    "switch",
+    "case",
+    "break",
+    "continue",
+    "new",
+    "this",
+    "class",
+    "extends",
+    "implements",
+    "interface",
+    "type",
+    "enum",
+    "async",
+    "await",
+    "try",
+    "catch",
+    "finally",
+    "throw",
+    "typeof",
+    "instanceof",
+    "in",
+    "of",
+    "default",
+    "yield",
+    "void",
+    "null",
+    "undefined",
+    "true",
+    "false",
+    "as",
+    "is",
+    "readonly",
+    "declare",
+    "abstract",
+    "static",
+    "private",
+    "public",
+    "protected",
+    "super",
+    "delete",
+    "debugger",
+    "satisfies",
+  ]),
+  rust: new Set([
+    "fn",
+    "let",
+    "mut",
+    "const",
+    "if",
+    "else",
+    "for",
+    "while",
+    "loop",
+    "match",
+    "return",
+    "use",
+    "mod",
+    "pub",
+    "crate",
+    "self",
+    "super",
+    "struct",
+    "enum",
+    "impl",
+    "trait",
+    "where",
+    "async",
+    "await",
+    "move",
+    "ref",
+    "type",
+    "as",
+    "in",
+    "unsafe",
+    "extern",
+    "dyn",
+    "true",
+    "false",
+    "Some",
+    "None",
+    "Ok",
+    "Err",
+    "Self",
+  ]),
+  python: new Set([
+    "def",
+    "class",
+    "if",
+    "elif",
+    "else",
+    "for",
+    "while",
+    "return",
+    "import",
+    "from",
+    "as",
+    "try",
+    "except",
+    "finally",
+    "raise",
+    "with",
+    "yield",
+    "lambda",
+    "pass",
+    "break",
+    "continue",
+    "and",
+    "or",
+    "not",
+    "in",
+    "is",
+    "None",
+    "True",
+    "False",
+    "self",
+    "async",
+    "await",
+    "nonlocal",
+    "global",
+    "assert",
+    "del",
+  ]),
+  go: new Set([
+    "func",
+    "var",
+    "const",
+    "if",
+    "else",
+    "for",
+    "range",
+    "return",
+    "package",
+    "import",
+    "type",
+    "struct",
+    "interface",
+    "map",
+    "chan",
+    "go",
+    "defer",
+    "select",
+    "case",
+    "switch",
+    "break",
+    "continue",
+    "default",
+    "fallthrough",
+    "nil",
+    "true",
+    "false",
+    "make",
+    "append",
+    "len",
+    "cap",
+  ]),
   json: new Set([]),
-  toml: new Set(["true","false"]),
-  yaml: new Set(["true","false","null","yes","no"]),
+  toml: new Set(["true", "false"]),
+  yaml: new Set(["true", "false", "null", "yes", "no"]),
   html: new Set([]),
   css: new Set(["important"]),
-  shell: new Set(["if","then","else","elif","fi","for","while","do","done","case","esac","in","function","return","export","local","readonly","set","unset","source","alias","echo","cd","exit","true","false"]),
+  shell: new Set([
+    "if",
+    "then",
+    "else",
+    "elif",
+    "fi",
+    "for",
+    "while",
+    "do",
+    "done",
+    "case",
+    "esac",
+    "in",
+    "function",
+    "return",
+    "export",
+    "local",
+    "readonly",
+    "set",
+    "unset",
+    "source",
+    "alias",
+    "echo",
+    "cd",
+    "exit",
+    "true",
+    "false",
+  ]),
   md: new Set([]),
-  sql: new Set(["select","from","where","and","or","not","insert","into","values","update","set","delete","create","drop","alter","table","index","join","inner","left","right","outer","on","as","order","by","group","having","limit","offset","union","distinct","null","is","like","in","between","exists","case","when","then","else","end","count","sum","avg","min","max","true","false"]),
+  sql: new Set([
+    "select",
+    "from",
+    "where",
+    "and",
+    "or",
+    "not",
+    "insert",
+    "into",
+    "values",
+    "update",
+    "set",
+    "delete",
+    "create",
+    "drop",
+    "alter",
+    "table",
+    "index",
+    "join",
+    "inner",
+    "left",
+    "right",
+    "outer",
+    "on",
+    "as",
+    "order",
+    "by",
+    "group",
+    "having",
+    "limit",
+    "offset",
+    "union",
+    "distinct",
+    "null",
+    "is",
+    "like",
+    "in",
+    "between",
+    "exists",
+    "case",
+    "when",
+    "then",
+    "else",
+    "end",
+    "count",
+    "sum",
+    "avg",
+    "min",
+    "max",
+    "true",
+    "false",
+  ]),
 };
 
-interface Token { text: string; type?: TokenType }
+interface Token {
+  text: string;
+  type?: TokenType;
+}
 
 function tokenizeLine(line: string, lang: string | null): Token[] {
   if (!lang) return [{ text: line }];
@@ -293,12 +617,19 @@ function tokenizeLine(line: string, lang: string | null): Token[] {
     // Line comments
     if (
       (lang === "ts" || lang === "rust" || lang === "go" || lang === "css") &&
-      line[i] === "/" && line[i + 1] === "/"
+      line[i] === "/" &&
+      line[i + 1] === "/"
     ) {
       tokens.push({ text: line.slice(i), type: "comment" });
       return tokens;
     }
-    if ((lang === "python" || lang === "shell" || lang === "toml" || lang === "yaml") && line[i] === "#") {
+    if (
+      (lang === "python" ||
+        lang === "shell" ||
+        lang === "toml" ||
+        lang === "yaml") &&
+      line[i] === "#"
+    ) {
       tokens.push({ text: line.slice(i), type: "comment" });
       return tokens;
     }
@@ -316,7 +647,11 @@ function tokenizeLine(line: string, lang: string | null): Token[] {
     }
 
     // Block comment start /* ... */ (inline only)
-    if ((lang === "ts" || lang === "rust" || lang === "go" || lang === "css") && line[i] === "/" && line[i + 1] === "*") {
+    if (
+      (lang === "ts" || lang === "rust" || lang === "go" || lang === "css") &&
+      line[i] === "/" &&
+      line[i + 1] === "*"
+    ) {
       const end = line.indexOf("*/", i + 2);
       const slice = end >= 0 ? line.slice(i, end + 2) : line.slice(i);
       tokens.push({ text: slice, type: "comment" });
@@ -339,9 +674,19 @@ function tokenizeLine(line: string, lang: string | null): Token[] {
     }
 
     // Numbers
-    if (/[0-9]/.test(line[i]) && (i === 0 || /[\s,\(\[\{=:+\-*/<>!&|^~%]/.test(line[i - 1]))) {
+    if (
+      /[0-9]/.test(line[i]) &&
+      (i === 0 || /[\s,\(\[\{=:+\-*/<>!&|^~%]/.test(line[i - 1]))
+    ) {
       let j = i;
-      if (line[j] === "0" && (line[j + 1] === "x" || line[j + 1] === "X" || line[j + 1] === "o" || line[j + 1] === "b")) j += 2;
+      if (
+        line[j] === "0" &&
+        (line[j + 1] === "x" ||
+          line[j + 1] === "X" ||
+          line[j + 1] === "o" ||
+          line[j + 1] === "b")
+      )
+        j += 2;
       while (j < line.length && /[0-9a-fA-F._]/.test(line[j])) j++;
       tokens.push({ text: line.slice(i, j), type: "number" });
       i = j;
@@ -354,9 +699,18 @@ function tokenizeLine(line: string, lang: string | null): Token[] {
       while (j < line.length && /[a-zA-Z0-9_$]/.test(line[j])) j++;
       const word = line.slice(i, j);
       const kws = KEYWORDS[lang];
-      if (kws && (lang === "sql" ? kws.has(word.toLowerCase()) : kws.has(word))) {
+      if (
+        kws &&
+        (lang === "sql" ? kws.has(word.toLowerCase()) : kws.has(word))
+      ) {
         tokens.push({ text: word, type: "keyword" });
-      } else if (/^[A-Z]/.test(word) && word.length > 1 && lang !== "json" && lang !== "yaml" && lang !== "md") {
+      } else if (
+        /^[A-Z]/.test(word) &&
+        word.length > 1 &&
+        lang !== "json" &&
+        lang !== "yaml" &&
+        lang !== "md"
+      ) {
         tokens.push({ text: word, type: "type" });
       } else {
         tokens.push({ text: word });
@@ -390,7 +744,13 @@ function tokenizeLine(line: string, lang: string | null): Token[] {
   return tokens;
 }
 
-function HighlightedLine({ line, lang }: { line: string; lang: string | null }) {
+function HighlightedLine({
+  line,
+  lang,
+}: {
+  line: string;
+  lang: string | null;
+}) {
   const tokens = useMemo(() => tokenizeLine(line, lang), [line, lang]);
 
   if (!lang || tokens.length === 1) {
@@ -404,16 +764,18 @@ function HighlightedLine({ line, lang }: { line: string; lang: string | null }) 
           <span
             key={i}
             className="syntax-token"
-            style={{
-              "--light": TOKEN_COLORS[t.type][0],
-              "--dark": TOKEN_COLORS[t.type][1],
-            } as React.CSSProperties}
+            style={
+              {
+                "--light": TOKEN_COLORS[t.type][0],
+                "--dark": TOKEN_COLORS[t.type][1],
+              } as React.CSSProperties
+            }
           >
             {t.text}
           </span>
         ) : (
           <span key={i}>{t.text}</span>
-        )
+        ),
       )}
     </>
   );
@@ -427,19 +789,27 @@ function wordDiff(oldStr: string, newStr: string): DiffSegment[] {
   const oldToks = tokenize(oldStr);
   const newToks = tokenize(newStr);
   // LCS via DP
-  const m = oldToks.length, n = newToks.length;
-  const dp: number[][] = Array.from({ length: m + 1 }, () => Array(n + 1).fill(0));
+  const m = oldToks.length,
+    n = newToks.length;
+  const dp: number[][] = Array.from({ length: m + 1 }, () =>
+    Array(n + 1).fill(0),
+  );
   for (let i = 1; i <= m; i++)
     for (let j = 1; j <= n; j++)
-      dp[i][j] = oldToks[i - 1] === newToks[j - 1] ? dp[i - 1][j - 1] + 1 : Math.max(dp[i - 1][j], dp[i][j - 1]);
+      dp[i][j] =
+        oldToks[i - 1] === newToks[j - 1]
+          ? dp[i - 1][j - 1] + 1
+          : Math.max(dp[i - 1][j], dp[i][j - 1]);
   // Backtrack
   const segments: DiffSegment[] = [];
-  let i = m, j = n;
+  let i = m,
+    j = n;
   const stack: DiffSegment[] = [];
   while (i > 0 || j > 0) {
     if (i > 0 && j > 0 && oldToks[i - 1] === newToks[j - 1]) {
       stack.push({ text: oldToks[i - 1], type: "same" });
-      i--; j--;
+      i--;
+      j--;
     } else if (j > 0 && (i === 0 || dp[i][j - 1] >= dp[i - 1][j])) {
       stack.push({ text: newToks[j - 1], type: "add" });
       j--;
@@ -460,13 +830,28 @@ function wordDiff(oldStr: string, newStr: string): DiffSegment[] {
   return segments;
 }
 
-function FileView({ filePath, project, onInsertRef, scrollRef }: { filePath: string; project: string; onInsertRef?: (ref: string) => void; scrollRef?: React.RefObject<HTMLDivElement | null> }) {
+function FileView({
+  filePath,
+  project,
+  onInsertRef,
+  scrollRef,
+}: {
+  filePath: string;
+  project: string;
+  onInsertRef?: (ref: string) => void;
+  scrollRef?: React.RefObject<HTMLDivElement | null>;
+}) {
   const [content, setContent] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [anchor, setAnchor] = useState<number | null>(null);
   const [selEnd, setSelEnd] = useState<number | null>(null);
-  const [diff, setDiff] = useState<{ added: Set<number>; modified: Set<number>; deletedAfter: Set<number>; oldLines: Map<number, string[]> } | null>(null);
+  const [diff, setDiff] = useState<{
+    added: Set<number>;
+    modified: Set<number>;
+    deletedAfter: Set<number>;
+    oldLines: Map<number, string[]>;
+  } | null>(null);
   const [diffIdx, setDiffIdx] = useState(-1);
   const [expandedHunk, setExpandedHunk] = useState<number | null>(null);
   const [wrap, setWrap] = useState(false);
@@ -512,15 +897,21 @@ function FileView({ filePath, project, onInsertRef, scrollRef }: { filePath: str
     return map;
   }, [oldLineKeys]);
 
-  const scrollToLine = useCallback((lineNum: number) => {
-    if (!tableRef.current || !scrollRef?.current) return;
-    const row = tableRef.current.querySelector(`tr:nth-child(${lineNum})`);
-    if (row) {
-      const container = scrollRef.current;
-      const rowTop = (row as HTMLElement).offsetTop;
-      container.scrollTo({ top: Math.max(0, rowTop - 80), behavior: "smooth" });
-    }
-  }, [scrollRef]);
+  const scrollToLine = useCallback(
+    (lineNum: number) => {
+      if (!tableRef.current || !scrollRef?.current) return;
+      const row = tableRef.current.querySelector(`tr:nth-child(${lineNum})`);
+      if (row) {
+        const container = scrollRef.current;
+        const rowTop = (row as HTMLElement).offsetTop;
+        container.scrollTo({
+          top: Math.max(0, rowTop - 80),
+          behavior: "smooth",
+        });
+      }
+    },
+    [scrollRef],
+  );
 
   useEffect(() => {
     setContent(null);
@@ -532,7 +923,9 @@ function FileView({ filePath, project, onInsertRef, scrollRef }: { filePath: str
     setDiffIdx(-1);
     setExpandedHunk(null);
 
-    fetch(`/api/file?path=${encodeURIComponent(filePath)}&project=${encodeURIComponent(project)}`)
+    fetch(
+      `/api/file?path=${encodeURIComponent(filePath)}&project=${encodeURIComponent(project)}`,
+    )
       .then((r) => {
         if (!r.ok) {
           if (r.status === 413) throw new Error("File too large (>1MB)");
@@ -548,17 +941,30 @@ function FileView({ filePath, project, onInsertRef, scrollRef }: { filePath: str
       .finally(() => setLoading(false));
 
     // Fetch diff in parallel
-    fetch(`/api/git/diff?path=${encodeURIComponent(filePath)}&project=${encodeURIComponent(project)}`)
-      .then((r) => r.ok ? r.json() : null)
+    fetch(
+      `/api/git/diff?path=${encodeURIComponent(filePath)}&project=${encodeURIComponent(project)}`,
+    )
+      .then((r) => (r.ok ? r.json() : null))
       .then((data) => {
-        if (data && (data.added.length > 0 || data.modified.length > 0 || data.deleted_after.length > 0 || Object.keys(data.old_lines || {}).length > 0)) {
+        if (
+          data &&
+          (data.added.length > 0 ||
+            data.modified.length > 0 ||
+            data.deleted_after.length > 0 ||
+            Object.keys(data.old_lines || {}).length > 0)
+        ) {
           const oldLines = new Map<number, string[]>();
           if (data.old_lines) {
             for (const [k, v] of Object.entries(data.old_lines)) {
               oldLines.set(Number(k), v as string[]);
             }
           }
-          setDiff({ added: new Set(data.added), modified: new Set(data.modified), deletedAfter: new Set(data.deleted_after), oldLines });
+          setDiff({
+            added: new Set(data.added),
+            modified: new Set(data.modified),
+            deletedAfter: new Set(data.deleted_after),
+            oldLines,
+          });
         }
       })
       .catch(() => {});
@@ -566,27 +972,34 @@ function FileView({ filePath, project, onInsertRef, scrollRef }: { filePath: str
 
   const lines = content?.split("\n") ?? [];
 
-  const handleGutterClick = useCallback((lineNum: number) => {
-    if (anchor === null) {
-      setAnchor(lineNum);
-      setSelEnd(null);
-    } else {
-      setSelEnd(lineNum);
-    }
-  }, [anchor]);
+  const handleGutterClick = useCallback(
+    (lineNum: number) => {
+      if (anchor === null) {
+        setAnchor(lineNum);
+        setSelEnd(null);
+      } else {
+        setSelEnd(lineNum);
+      }
+    },
+    [anchor],
+  );
 
-  const handleRowClick = useCallback((lineNum: number) => {
-    const lk = loupeLines.get(lineNum);
-    if (lk !== undefined) {
-      setExpandedHunk(expandedHunk === lk ? null : lk);
-    }
-  }, [loupeLines, expandedHunk]);
+  const handleRowClick = useCallback(
+    (lineNum: number) => {
+      const lk = loupeLines.get(lineNum);
+      if (lk !== undefined) {
+        setExpandedHunk(expandedHunk === lk ? null : lk);
+      }
+    },
+    [loupeLines, expandedHunk],
+  );
 
-  const selRange = anchor !== null ? (
-    selEnd !== null
-      ? [Math.min(anchor, selEnd), Math.max(anchor, selEnd)] as const
-      : [anchor, anchor] as const
-  ) : null;
+  const selRange =
+    anchor !== null
+      ? selEnd !== null
+        ? ([Math.min(anchor, selEnd), Math.max(anchor, selEnd)] as const)
+        : ([anchor, anchor] as const)
+      : null;
 
   const relPath = relativePath(filePath, project);
   const refText = selRange
@@ -606,12 +1019,16 @@ function FileView({ filePath, project, onInsertRef, scrollRef }: { filePath: str
     setSelEnd(null);
   }, []);
 
-  const goToHunk = useCallback((idx: number) => {
-    if (diffHunks.length === 0) return;
-    const clamped = ((idx % diffHunks.length) + diffHunks.length) % diffHunks.length;
-    setDiffIdx(clamped);
-    scrollToLine(diffHunks[clamped]);
-  }, [diffHunks, scrollToLine]);
+  const goToHunk = useCallback(
+    (idx: number) => {
+      if (diffHunks.length === 0) return;
+      const clamped =
+        ((idx % diffHunks.length) + diffHunks.length) % diffHunks.length;
+      setDiffIdx(clamped);
+      scrollToLine(diffHunks[clamped]);
+    },
+    [diffHunks, scrollToLine],
+  );
 
   if (loading) {
     return (
@@ -666,33 +1083,53 @@ function FileView({ filePath, project, onInsertRef, scrollRef }: { filePath: str
         const segments = wordDiff(oldText, newText);
         rows.push(
           <tr key={`del-${afterLine}-${j}`} className="bg-red-500/10">
-            <td className="select-none text-right pr-3 py-0.5 border-r border-border w-10 sticky left-0 bg-red-500/10 text-red-400/50 pl-3 diff-gutter-del">−</td>
+            <td className="select-none text-right pr-3 py-0.5 border-r border-border w-10 sticky left-0 bg-red-500/10 text-red-400/50 pl-3 diff-gutter-del">
+              −
+            </td>
             <td className="pl-3 pr-3 py-0.5 whitespace-pre">
               {segments.map((s, si) =>
-                s.type === "del" ? <span key={si} className="bg-red-500/20 text-red-400">{s.text}</span>
-                : s.type === "same" ? <span key={si} className="text-muted-foreground/60">{s.text}</span>
-                : null
+                s.type === "del" ? (
+                  <span key={si} className="bg-red-500/20 text-red-400">
+                    {s.text}
+                  </span>
+                ) : s.type === "same" ? (
+                  <span key={si} className="text-muted-foreground/60">
+                    {s.text}
+                  </span>
+                ) : null,
               )}
             </td>
           </tr>,
           <tr key={`add-${afterLine}-${j}`} className="bg-green-500/10">
-            <td className="select-none text-right pr-3 py-0.5 border-r border-border w-10 sticky left-0 bg-green-500/10 text-green-400/50 pl-3 diff-gutter-add">+</td>
+            <td className="select-none text-right pr-3 py-0.5 border-r border-border w-10 sticky left-0 bg-green-500/10 text-green-400/50 pl-3 diff-gutter-add">
+              +
+            </td>
             <td className="pl-3 pr-3 py-0.5 whitespace-pre">
               {segments.map((s, si) =>
-                s.type === "add" ? <span key={si} className="bg-green-500/20 text-green-400">{s.text}</span>
-                : s.type === "same" ? <span key={si} className="text-muted-foreground/60">{s.text}</span>
-                : null
+                s.type === "add" ? (
+                  <span key={si} className="bg-green-500/20 text-green-400">
+                    {s.text}
+                  </span>
+                ) : s.type === "same" ? (
+                  <span key={si} className="text-muted-foreground/60">
+                    {s.text}
+                  </span>
+                ) : null,
               )}
             </td>
-          </tr>
+          </tr>,
         );
       } else if (oldText !== null) {
         // Pure deletion
         rows.push(
           <tr key={`del-${afterLine}-${j}`} className="bg-red-500/10">
-            <td className="select-none text-right pr-3 py-0.5 border-r border-border w-10 sticky left-0 bg-red-500/10 text-red-400/50 pl-3 diff-gutter-del">−</td>
-            <td className="pl-3 pr-3 py-0.5 text-red-400/70 whitespace-pre">{oldText || " "}</td>
-          </tr>
+            <td className="select-none text-right pr-3 py-0.5 border-r border-border w-10 sticky left-0 bg-red-500/10 text-red-400/50 pl-3 diff-gutter-del">
+              −
+            </td>
+            <td className="pl-3 pr-3 py-0.5 text-red-400/70 whitespace-pre">
+              {oldText || " "}
+            </td>
+          </tr>,
         );
       }
       // Pure additions are already shown as normal lines with green gutter
@@ -707,11 +1144,21 @@ function FileView({ filePath, project, onInsertRef, scrollRef }: { filePath: str
         <span className="text-muted-foreground">
           {diffHunks.length > 0 ? (
             <>
-              <span className="text-foreground font-medium">{changedLines.length}</span> line{changedLines.length !== 1 ? "s" : ""} changed
-              {diffHunks.length > 1 && <span className="text-muted-foreground/60"> · {diffHunks.length} hunks</span>}
+              <span className="text-foreground font-medium">
+                {changedLines.length}
+              </span>{" "}
+              line{changedLines.length !== 1 ? "s" : ""} changed
+              {diffHunks.length > 1 && (
+                <span className="text-muted-foreground/60">
+                  {" "}
+                  · {diffHunks.length} hunks
+                </span>
+              )}
             </>
           ) : (
-            <span className="text-muted-foreground/60">{lines.length} lines</span>
+            <span className="text-muted-foreground/60">
+              {lines.length} lines
+            </span>
           )}
         </span>
         <div className="flex items-center gap-1">
@@ -725,10 +1172,14 @@ function FileView({ filePath, project, onInsertRef, scrollRef }: { filePath: str
           {diffHunks.length > 0 && (
             <>
               {diffIdx >= 0 && (
-                <span className="text-muted-foreground/60 ml-1 mr-1">{diffIdx + 1}/{diffHunks.length}</span>
+                <span className="text-muted-foreground/60 ml-1 mr-1">
+                  {diffIdx + 1}/{diffHunks.length}
+                </span>
               )}
               <button
-                onClick={() => goToHunk(diffIdx <= 0 ? diffHunks.length - 1 : diffIdx - 1)}
+                onClick={() =>
+                  goToHunk(diffIdx <= 0 ? diffHunks.length - 1 : diffIdx - 1)
+                }
                 className="p-0.5 hover:bg-muted rounded transition-colors cursor-pointer"
                 title="Previous change"
               >
@@ -751,25 +1202,43 @@ function FileView({ filePath, project, onInsertRef, scrollRef }: { filePath: str
           {renderOldLines(0)}
           {lines.map((line, i) => {
             const lineNum = i + 1;
-            const inRange = selRange && lineNum >= selRange[0] && lineNum <= selRange[1];
+            const inRange =
+              selRange && lineNum >= selRange[0] && lineNum <= selRange[1];
             const isAdded = diff?.added.has(lineNum);
             const isMod = diff?.modified.has(lineNum);
             const hasPeek = loupeLines.has(lineNum);
-            const diffClass = isAdded ? "diff-gutter-add" : isMod ? "diff-gutter-mod" : "";
+            const diffClass = isAdded
+              ? "diff-gutter-add"
+              : isMod
+                ? "diff-gutter-mod"
+                : "";
             return (
               <React.Fragment key={i}>
                 <tr
-                  className={inRange ? "bg-blue-500/15" : (isAdded ? "bg-green-500/5" : isMod ? "bg-blue-500/5" : "hover:bg-muted/50")}
+                  className={
+                    inRange
+                      ? "bg-blue-500/15"
+                      : isAdded
+                        ? "bg-green-500/5"
+                        : isMod
+                          ? "bg-blue-500/5"
+                          : "hover:bg-muted/50"
+                  }
                   onClick={hasPeek ? () => handleRowClick(lineNum) : undefined}
                   style={hasPeek ? { cursor: "zoom-in" } : undefined}
                 >
                   <td
-                    onClick={(e) => { e.stopPropagation(); handleGutterClick(lineNum); }}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      handleGutterClick(lineNum);
+                    }}
                     className={`select-none text-right pr-3 py-0.5 border-r border-border w-10 sticky left-0 cursor-pointer ${diffClass ? "relative" : ""} ${diffClass} ${inRange ? "pl-3 bg-blue-500/15 text-blue-600 dark:text-blue-400 font-medium" : `${diffClass ? "pl-[9px]" : "pl-3"} ${isAdded ? "bg-green-500/5" : isMod ? "bg-blue-500/5" : "bg-background"} text-muted-foreground/60 hover:text-foreground`}`}
                   >
                     {lineNum}
                   </td>
-                  <td className={`pl-3 pr-3 py-0.5 text-foreground ${wrap ? "whitespace-pre-wrap break-all" : "whitespace-pre"}`}>
+                  <td
+                    className={`pl-3 pr-3 py-0.5 text-foreground ${wrap ? "whitespace-pre-wrap break-all" : "whitespace-pre"}`}
+                  >
                     <HighlightedLine line={line} lang={lang} />
                   </td>
                 </tr>
@@ -809,10 +1278,16 @@ function FileView({ filePath, project, onInsertRef, scrollRef }: { filePath: str
   );
 }
 
-export function FilePanel({ filePath, project, browse, onClose, onInsertRef }: FilePanelProps) {
+export function FilePanel({
+  filePath,
+  project,
+  browse,
+  onClose,
+  onInsertRef,
+}: FilePanelProps) {
   const scrollContainerRef = useRef<HTMLDivElement>(null);
   const [mode, setMode] = useState<Mode>(() =>
-    browse ? { type: "browse", dirPath: project } : { type: "file", filePath }
+    browse ? { type: "browse", dirPath: project } : { type: "file", filePath },
   );
 
   // Reset mode when props change
@@ -843,13 +1318,19 @@ export function FilePanel({ filePath, project, browse, onClose, onInsertRef }: F
   return (
     <>
       {/* Mobile overlay backdrop */}
-      <div className="fixed inset-0 bg-black/60 z-40 lg:hidden" onClick={onClose} />
+      <div
+        className="fixed inset-0 bg-black/60 z-40 lg:hidden"
+        onClick={onClose}
+      />
 
       <div className="fixed inset-0 z-50 pt-[env(safe-area-inset-top)] lg:pt-0 lg:static lg:z-auto lg:w-[500px] lg:shrink-0 lg:border-l lg:border-border flex flex-col bg-background">
         {/* Header */}
         <div className="flex items-center gap-2 px-3 py-2.5 border-b border-border bg-muted/50 shrink-0">
           {mode.type === "file" && mode.returnDir ? (
-            <button onClick={handleBack} className="p-0.5 hover:bg-muted rounded transition-colors cursor-pointer shrink-0">
+            <button
+              onClick={handleBack}
+              className="p-0.5 hover:bg-muted rounded transition-colors cursor-pointer shrink-0"
+            >
               <ArrowLeft size={14} className="text-muted-foreground" />
             </button>
           ) : mode.type === "browse" ? (
@@ -857,7 +1338,11 @@ export function FilePanel({ filePath, project, browse, onClose, onInsertRef }: F
           ) : (
             <FileCode size={14} className="text-muted-foreground shrink-0" />
           )}
-          <Breadcrumbs path={headerPath} project={project} onNavigate={handleNavigate} />
+          <Breadcrumbs
+            path={headerPath}
+            project={project}
+            onNavigate={handleNavigate}
+          />
           <button
             onClick={onClose}
             className="p-1 hover:bg-muted rounded transition-colors cursor-pointer shrink-0"
@@ -869,9 +1354,19 @@ export function FilePanel({ filePath, project, browse, onClose, onInsertRef }: F
         {/* Content */}
         <div ref={scrollContainerRef} className="flex-1 overflow-auto min-h-0">
           {mode.type === "browse" ? (
-            <BrowseView dirPath={mode.dirPath} project={project} onOpenFile={handleOpenFile} onNavigate={handleNavigate} />
+            <BrowseView
+              dirPath={mode.dirPath}
+              project={project}
+              onOpenFile={handleOpenFile}
+              onNavigate={handleNavigate}
+            />
           ) : (
-            <FileView filePath={mode.filePath} project={project} onInsertRef={onInsertRef} scrollRef={scrollContainerRef} />
+            <FileView
+              filePath={mode.filePath}
+              project={project}
+              onInsertRef={onInsertRef}
+              scrollRef={scrollContainerRef}
+            />
           )}
         </div>
       </div>

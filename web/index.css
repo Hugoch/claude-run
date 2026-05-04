@@ -32,10 +32,12 @@
 @custom-variant dark (&:is(.dark *));
 
 @theme {
-  --font-sans: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo,
-    Consolas, monospace;
-  --font-mono: "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo,
-    Consolas, monospace;
+  --font-sans:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    monospace;
+  --font-mono:
+    "JetBrains Mono", ui-monospace, SFMono-Regular, "SF Mono", Menlo, Consolas,
+    monospace;
 
   /* Light theme */
   --color-background: #ffffff;
@@ -103,17 +105,27 @@
   --color-sidebar-ring: #cbd5e1;
 }
 
-.syntax-token { color: var(--light); }
-.dark .syntax-token { color: var(--dark); }
+.syntax-token {
+  color: var(--light);
+}
+.dark .syntax-token {
+  color: var(--dark);
+}
 
-.diff-gutter-add { border-left: 3px solid rgba(34, 197, 94, 0.7); }
-.diff-gutter-mod { border-left: 3px solid rgba(59, 130, 246, 0.7); }
-.diff-gutter-del { border-left: 3px solid rgba(239, 68, 68, 0.5); }
+.diff-gutter-add {
+  border-left: 3px solid rgba(34, 197, 94, 0.7);
+}
+.diff-gutter-mod {
+  border-left: 3px solid rgba(59, 130, 246, 0.7);
+}
+.diff-gutter-del {
+  border-left: 3px solid rgba(239, 68, 68, 0.5);
+}
 .diff-del-marker {
   position: relative;
 }
 .diff-del-marker::after {
-  content: '';
+  content: "";
   position: absolute;
   left: 0;
   bottom: -4px;
@@ -125,7 +137,8 @@
   z-index: 1;
 }
 
-html, body {
+html,
+body {
   background: var(--color-background);
 }
 
@@ -171,13 +184,23 @@ select option {
 }
 
 @keyframes slide-up {
-  from { opacity: 0; transform: translateY(12px); }
-  to { opacity: 1; transform: translateY(0); }
+  from {
+    opacity: 0;
+    transform: translateY(12px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
 }
 
 @keyframes fade-in {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: 1;
+  }
 }
 
 .animate-slide-up {
@@ -189,8 +212,12 @@ select option {
 }
 
 @keyframes highlight-flash {
-  0% { background: rgba(99, 102, 241, 0.25); }
-  100% { background: transparent; }
+  0% {
+    background: rgba(99, 102, 241, 0.25);
+  }
+  100% {
+    background: transparent;
+  }
 }
 
 .highlight-flash {
@@ -199,7 +226,11 @@ select option {
 }
 
 [data-streamdown="inline-code"] {
-  background: color-mix(in srgb, var(--color-foreground) 12%, transparent) !important;
+  background: color-mix(
+    in srgb,
+    var(--color-foreground) 12%,
+    transparent
+  ) !important;
   border: 1px solid color-mix(in srgb, var(--color-foreground) 10%, transparent);
   padding: 0 0.35em !important;
   margin: 0 0.1em;
@@ -212,6 +243,10 @@ select option {
 }
 
 @keyframes shimmer {
-  0% { background-position: 200% 0; }
-  100% { background-position: -200% 0; }
+  0% {
+    background-position: 200% 0;
+  }
+  100% {
+    background-position: -200% 0;
+  }
 }

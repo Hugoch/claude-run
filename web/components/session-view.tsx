@@ -1,6 +1,26 @@
-import { useEffect, useState, useRef, useCallback, useMemo, useLayoutEffect } from "react";
-import type { ConversationMessage, Session, SubagentInfo } from "@claude-run/api";
-import { SendHorizonal, ShieldCheck, ShieldX, MessageCircleQuestion, Loader2, CircleCheck, CircleX, Square } from "lucide-react";
+import {
+  useEffect,
+  useState,
+  useRef,
+  useCallback,
+  useMemo,
+  useLayoutEffect,
+} from "react";
+import type {
+  ConversationMessage,
+  Session,
+  SubagentInfo,
+} from "@claude-run/api";
+import {
+  SendHorizonal,
+  ShieldCheck,
+  ShieldX,
+  MessageCircleQuestion,
+  Loader2,
+  CircleCheck,
+  CircleX,
+  Square,
+} from "lucide-react";
 import MessageBlock from "./message-block";
 import ScrollToBottomButton from "./scroll-to-bottom-button";
 import { MarkdownExportButton } from "./markdown-export";
@@ -40,7 +60,9 @@ function ThinkingIndicator() {
         <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-muted-foreground opacity-75" />
         <span className="relative inline-flex rounded-full h-2 w-2 bg-muted-foreground" />
       </span>
-      <span className={`text-[11px] text-muted-foreground font-medium transition-opacity duration-300 ${fade ? "opacity-100" : "opacity-0"}`}>
+      <span
+        className={`text-[11px] text-muted-foreground font-medium transition-opacity duration-300 ${fade ? "opacity-100" : "opacity-0"}`}
+      >
         {THINKING_VERBS[index]}...
       </span>
     </div>
@@ -59,25 +81,42 @@ interface SessionViewProps {
 }
 
 function SessionView(props: SessionViewProps) {
-  const { sessionId, session, onNavigateSession, onOpenFile, olderSlugSessions, pendingInsert, onConsumeInsert, onResurrect } = props;
+  const {
+    sessionId,
+    session,
+    onNavigateSession,
+    onOpenFile,
+    olderSlugSessions,
+    pendingInsert,
+    onConsumeInsert,
+    onResurrect,
+  } = props;
 
   const [messages, setMessages] = useState<ConversationMessage[]>([]);
   const [loading, setLoading] = useState(true);
   const [autoScroll, setAutoScroll] = useState(true);
   const autoScrollRef = useRef(true);
-  const [subagentMap, setSubagentMap] = useState<Map<string, string>>(new Map());
+  const [subagentMap, setSubagentMap] = useState<Map<string, string>>(
+    new Map(),
+  );
   // Per-session drafts with localStorage persistence
   const draftsRef = useRef<Map<string, string>>(() => {
     try {
       const saved = localStorage.getItem("claude-run-drafts");
       return saved ? new Map(Object.entries(JSON.parse(saved))) : new Map();
-    } catch { return new Map(); }
+    } catch {
+      return new Map();
+    }
   });
   // Initialize drafts map on first render
   if (typeof draftsRef.current === "function") {
-    draftsRef.current = (draftsRef.current as unknown as () => Map<string, string>)();
+    draftsRef.current = (
+      draftsRef.current as unknown as () => Map<string, string>
+    )();
   }
-  const [inputValue, setInputValue] = useState(() => draftsRef.current.get(sessionId) || "");
+  const [inputValue, setInputValue] = useState(
+    () => draftsRef.current.get(sessionId) || "",
+  );
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
   // Switch draft when session changes
@@ -86,17 +125,23 @@ function SessionView(props: SessionViewProps) {
   }, [sessionId]);
 
   // Save draft on change
-  const updateInput = useCallback((value: string) => {
-    setInputValue(value);
-    if (value.trim()) {
-      draftsRef.current.set(sessionId, value);
-    } else {
-      draftsRef.current.delete(sessionId);
-    }
-    try {
-      localStorage.setItem("claude-run-drafts", JSON.stringify(Object.fromEntries(draftsRef.current)));
-    } catch {}
-  }, [sessionId]);
+  const updateInput = useCallback(
+    (value: string) => {
+      setInputValue(value);
+      if (value.trim()) {
+        draftsRef.current.set(sessionId, value);
+      } else {
+        draftsRef.current.delete(sessionId);
+      }
+      try {
+        localStorage.setItem(
+          "claude-run-drafts",
+          JSON.stringify(Object.fromEntries(draftsRef.current)),
+        );
+      } catch {}
+    },
+    [sessionId],
+  );
 
   // Auto-grow textarea
   useEffect(() => {
@@ -109,7 +154,10 @@ function SessionView(props: SessionViewProps) {
   // Consume pending insert from file panel
   useEffect(() => {
     if (pendingInsert && onConsumeInsert) {
-      const prefix = inputValue && !inputValue.endsWith(" ") && !inputValue.endsWith("\n") ? " " : "";
+      const prefix =
+        inputValue && !inputValue.endsWith(" ") && !inputValue.endsWith("\n")
+          ? " "
+          : "";
       updateInput(inputValue + prefix + pendingInsert);
       onConsumeInsert();
       textareaRef.current?.focus();
@@ -118,8 +166,13 @@ function SessionView(props: SessionViewProps) {
 
   const [sending, setSending] = useState(false);
   const [pendingMessage, setPendingMessage] = useState<string | null>(null);
-  const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(null);
-  const [tailTarget, setTailTarget] = useState<{ filePath: string; description: string } | null>(null);
+  const [highlightedTaskId, setHighlightedTaskId] = useState<string | null>(
+    null,
+  );
+  const [tailTarget, setTailTarget] = useState<{
+    filePath: string;
+    description: string;
+  } | null>(null);
   const [hasMore, setHasMore] = useState(false);
   const [loadingOlder, setLoadingOlder] = useState(false);
   const containerRef = useRef<HTMLDivElement>(null);
@@ -141,7 +194,7 @@ function SessionView(props: SessionViewProps) {
     }
 
     const eventSource = new EventSource(
-      `/api/conversation/${sessionId}/stream?offset=${offsetRef.current}`
+      `/api/conversation/${sessionId}/stream?offset=${offsetRef.current}`,
     );
     eventSourceRef.current = eventSource;
 
@@ -178,7 +231,7 @@ function SessionView(props: SessionViewProps) {
 
     try {
       const res = await fetch(
-        `/api/conversation/${sessionId}/older?before=${startOffsetRef.current}&limit=50`
+        `/api/conversation/${sessionId}/older?before=${startOffsetRef.current}&limit=50`,
       );
       const data = await res.json();
       if (!mountedRef.current) return;
@@ -282,7 +335,7 @@ function SessionView(props: SessionViewProps) {
           loadOlder();
         }
       },
-      { root: containerRef.current, rootMargin: "200px" }
+      { root: containerRef.current, rootMargin: "200px" },
     );
     observer.observe(sentinel);
     return () => observer.disconnect();
@@ -317,7 +370,8 @@ function SessionView(props: SessionViewProps) {
     }
 
     const { scrollTop, scrollHeight, clientHeight } = containerRef.current;
-    const isAtBottom = scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD_PX;
+    const isAtBottom =
+      scrollHeight - scrollTop - clientHeight < SCROLL_THRESHOLD_PX;
     autoScrollRef.current = isAtBottom;
     setAutoScroll(isAtBottom);
   };
@@ -421,21 +475,24 @@ function SessionView(props: SessionViewProps) {
 
   const [answeringQuestion, setAnsweringQuestion] = useState(false);
 
-  const handleAnswerQuestion = useCallback(async (optionIndex: number) => {
-    if (!session.paneId || answeringQuestion) return;
-    setAnsweringQuestion(true);
-    try {
-      await fetch(`/api/sessions/${sessionId}/answer`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ optionIndex }),
-      });
-    } catch (err) {
-      console.error("Failed to answer question:", err);
-    } finally {
-      setAnsweringQuestion(false);
-    }
-  }, [session.paneId, sessionId, answeringQuestion]);
+  const handleAnswerQuestion = useCallback(
+    async (optionIndex: number) => {
+      if (!session.paneId || answeringQuestion) return;
+      setAnsweringQuestion(true);
+      try {
+        await fetch(`/api/sessions/${sessionId}/answer`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ optionIndex }),
+        });
+      } catch (err) {
+        console.error("Failed to answer question:", err);
+      } finally {
+        setAnsweringQuestion(false);
+      }
+    },
+    [session.paneId, sessionId, answeringQuestion],
+  );
 
   const [questionText, setQuestionText] = useState("");
   const [sendingQuestion, setSendingQuestion] = useState(false);
@@ -468,13 +525,21 @@ function SessionView(props: SessionViewProps) {
       const content = m.message?.content;
       if (!Array.isArray(content)) continue;
       for (const block of content) {
-        if (block.type !== "tool_result" || !block.tool_use_id || map.has(block.tool_use_id)) continue;
+        if (
+          block.type !== "tool_result" ||
+          !block.tool_use_id ||
+          map.has(block.tool_use_id)
+        )
+          continue;
         // tool_result content can be a string or an array of {type, text} blocks
-        const text = typeof block.content === "string"
-          ? block.content
-          : Array.isArray(block.content)
-            ? block.content.map((b: { text?: string }) => b.text || "").join("\n")
-            : "";
+        const text =
+          typeof block.content === "string"
+            ? block.content
+            : Array.isArray(block.content)
+              ? block.content
+                  .map((b: { text?: string }) => b.text || "")
+                  .join("\n")
+              : "";
         const agentMatch = text.match(/agentId:\s*([a-z0-9]+)/);
         if (agentMatch) {
           map.set(block.tool_use_id, agentMatch[1]);
@@ -486,7 +551,10 @@ function SessionView(props: SessionViewProps) {
 
   // Build task notification map: taskId → { status, summary, toolUseId }
   const taskNotifications = useMemo(() => {
-    const map = new Map<string, { status: string; summary: string; toolUseId?: string }>();
+    const map = new Map<
+      string,
+      { status: string; summary: string; toolUseId?: string }
+    >();
 
     // First pass: find taskId → toolUseId from tool_results
     const taskToToolUse = new Map<string, string>();
@@ -496,13 +564,18 @@ function SessionView(props: SessionViewProps) {
       if (!Array.isArray(content)) continue;
       for (const block of content) {
         if (block.type !== "tool_result" || !block.tool_use_id) continue;
-        const text = typeof block.content === "string"
-          ? block.content
-          : Array.isArray(block.content)
-            ? block.content.map((b: { text?: string }) => b.text || "").join("\n")
-            : "";
+        const text =
+          typeof block.content === "string"
+            ? block.content
+            : Array.isArray(block.content)
+              ? block.content
+                  .map((b: { text?: string }) => b.text || "")
+                  .join("\n")
+              : "";
         // Bash background tasks: "Command running in background with ID: xxx"
-        const bgMatch = text.match(/Command running in background with ID:\s*([a-z0-9]+)/);
+        const bgMatch = text.match(
+          /Command running in background with ID:\s*([a-z0-9]+)/,
+        );
         if (bgMatch) {
           taskToToolUse.set(bgMatch[1], block.tool_use_id);
         }
@@ -520,21 +593,34 @@ function SessionView(props: SessionViewProps) {
       const content = m.message?.content;
       // XML task-notification in string content
       if (typeof content === "string") {
-        const match = content.match(/<task-notification>([\s\S]*?)<\/task-notification>/);
+        const match = content.match(
+          /<task-notification>([\s\S]*?)<\/task-notification>/,
+        );
         if (!match) continue;
         const taskId = match[1].match(/<task-id>(.*?)<\/task-id>/)?.[1];
         const status = match[1].match(/<status>(.*?)<\/status>/)?.[1] || "";
-        const taskSummary = match[1].match(/<summary>(.*?)<\/summary>/)?.[1] || "";
-        if (taskId) map.set(taskId, { status, summary: taskSummary, toolUseId: taskToToolUse.get(taskId) });
+        const taskSummary =
+          match[1].match(/<summary>(.*?)<\/summary>/)?.[1] || "";
+        if (taskId)
+          map.set(taskId, {
+            status,
+            summary: taskSummary,
+            toolUseId: taskToToolUse.get(taskId),
+          });
         continue;
       }
       // TaskStop result in tool_result blocks
       if (!Array.isArray(content)) continue;
       for (const block of content) {
-        if (block.type !== "tool_result" || typeof block.content !== "string") continue;
+        if (block.type !== "tool_result" || typeof block.content !== "string")
+          continue;
         const stopMatch = block.content.match(/"task_id"\s*:\s*"([a-z0-9]+)"/);
         if (stopMatch && block.content.includes("Successfully stopped task")) {
-          map.set(stopMatch[1], { status: "stopped", summary: "Task stopped", toolUseId: taskToToolUse.get(stopMatch[1]) });
+          map.set(stopMatch[1], {
+            status: "stopped",
+            summary: "Task stopped",
+            toolUseId: taskToToolUse.get(stopMatch[1]),
+          });
         }
       }
     }
@@ -550,15 +636,22 @@ function SessionView(props: SessionViewProps) {
       const content = m.message?.content;
       if (m.type === "assistant" && Array.isArray(content)) {
         for (const block of content) {
-          if (block.type === "tool_use" && block.id && block.input?.description) {
+          if (
+            block.type === "tool_use" &&
+            block.id &&
+            block.input?.description
+          ) {
             toolUseDescriptions.set(block.id, block.input.description);
           }
         }
       }
       if (m.type === "user" && Array.isArray(content)) {
         for (const block of content) {
-          if (block.type !== "tool_result" || typeof block.content !== "string") continue;
-          const bgMatch = block.content.match(/Command running in background with ID:\s*([a-z0-9]+)/);
+          if (block.type !== "tool_result" || typeof block.content !== "string")
+            continue;
+          const bgMatch = block.content.match(
+            /Command running in background with ID:\s*([a-z0-9]+)/,
+          );
           if (bgMatch && block.tool_use_id) {
             taskToToolUse.set(bgMatch[1], block.tool_use_id);
           }
@@ -573,23 +666,35 @@ function SessionView(props: SessionViewProps) {
       const content = m.message?.content;
       if (!Array.isArray(content)) continue;
       for (const block of content) {
-        if (block.type !== "tool_result" || typeof block.content !== "string") continue;
-        const bgMatch = block.content.match(/Command running in background with ID:\s*([a-z0-9]+)/);
-        const fileMatch = block.content.match(/Output is being written to:\s*(\S+)/);
+        if (block.type !== "tool_result" || typeof block.content !== "string")
+          continue;
+        const bgMatch = block.content.match(
+          /Command running in background with ID:\s*([a-z0-9]+)/,
+        );
+        const fileMatch = block.content.match(
+          /Output is being written to:\s*(\S+)/,
+        );
         if (bgMatch && fileMatch) {
           taskOutputFiles.set(bgMatch[1], fileMatch[1]);
         }
       }
     }
 
-    const all: { taskId: string; description: string; outputFile?: string; notification?: { status: string; summary: string } }[] = [];
+    const all: {
+      taskId: string;
+      description: string;
+      outputFile?: string;
+      notification?: { status: string; summary: string };
+    }[] = [];
     for (const [taskId, toolUseId] of taskToToolUse) {
       const notif = taskNotifications.get(taskId);
       all.push({
         taskId,
         description: toolUseDescriptions.get(toolUseId) || taskId,
         outputFile: taskOutputFiles.get(taskId),
-        notification: notif ? { status: notif.status, summary: notif.summary } : undefined,
+        notification: notif
+          ? { status: notif.status, summary: notif.summary }
+          : undefined,
       });
     }
     return all;
@@ -603,35 +708,53 @@ function SessionView(props: SessionViewProps) {
     let cancelled = false;
     Promise.all(
       orphans.map((t) =>
-        fetch(`/api/tasks/${t.taskId}/alive`).then((r) => r.json()).then((d) => ({ taskId: t.taskId, alive: d.alive })).catch(() => ({ taskId: t.taskId, alive: false }))
-      )
+        fetch(`/api/tasks/${t.taskId}/alive`)
+          .then((r) => r.json())
+          .then((d) => ({ taskId: t.taskId, alive: d.alive }))
+          .catch(() => ({ taskId: t.taskId, alive: false })),
+      ),
     ).then((results) => {
       if (cancelled) return;
-      const dead = new Set(results.filter((r) => !r.alive).map((r) => r.taskId));
+      const dead = new Set(
+        results.filter((r) => !r.alive).map((r) => r.taskId),
+      );
       if (dead.size > 0) setDeadTasks(dead);
     });
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, [bgTasksRaw]);
 
-  const bgTasks = useMemo(() =>
-    bgTasksRaw.map((t) =>
-      !t.notification && deadTasks.has(t.taskId)
-        ? { ...t, notification: { status: "killed", summary: "Task no longer running" } }
-        : t
-    ),
-  [bgTasksRaw, deadTasks]);
+  const bgTasks = useMemo(
+    () =>
+      bgTasksRaw.map((t) =>
+        !t.notification && deadTasks.has(t.taskId)
+          ? {
+              ...t,
+              notification: {
+                status: "killed",
+                summary: "Task no longer running",
+              },
+            }
+          : t,
+      ),
+    [bgTasksRaw, deadTasks],
+  );
 
   const conversationMessages = useMemo(() => {
     // Deduplicate task-notification messages: if a real user message and a
     // queue-operation-converted message both carry the same task-id, keep only
     // the last one (the real user message). Walk backward so the later message wins.
-    const filtered = messages.filter((m) => m.type === "user" || m.type === "assistant");
+    const filtered = messages.filter(
+      (m) => m.type === "user" || m.type === "assistant",
+    );
     const result: typeof filtered = [];
     const taskIdsSeen = new Set<string>();
     for (let i = filtered.length - 1; i >= 0; i--) {
       const m = filtered[i];
       if (m.type === "user") {
-        const text = typeof m.message?.content === "string" ? m.message.content : null;
+        const text =
+          typeof m.message?.content === "string" ? m.message.content : null;
         if (text) {
           const match = text.match(/<task-id>(.*?)<\/task-id>/);
           if (match) {
@@ -656,10 +779,14 @@ function SessionView(props: SessionViewProps) {
       if (!Array.isArray(content)) continue;
       for (const block of content) {
         if (block.type === "tool_result" && block.tool_use_id) {
-          const raw = typeof block.content === "string"
-            ? block.content
-            : JSON.stringify(block.content, null, 2);
-          map.set(block.tool_use_id, { content: raw, isError: !!block.is_error });
+          const raw =
+            typeof block.content === "string"
+              ? block.content
+              : JSON.stringify(block.content, null, 2);
+          map.set(block.tool_use_id, {
+            content: raw,
+            isError: !!block.is_error,
+          });
         }
       }
     }
@@ -710,7 +837,10 @@ function SessionView(props: SessionViewProps) {
     return { toolDurationMap: toolDurations, turnDurationMap: turnDurations };
   }, [messages]);
 
-  const tasks = useMemo(() => buildTaskState(conversationMessages), [conversationMessages]);
+  const tasks = useMemo(
+    () => buildTaskState(conversationMessages),
+    [conversationMessages],
+  );
   const taskSubjects = useMemo(() => {
     const map = new Map<string, string>();
     for (const t of tasks) {
@@ -733,16 +863,21 @@ function SessionView(props: SessionViewProps) {
     }
     return -1; // no TaskUpdate found
   }, [conversationMessages]);
-  const allCompleted = tasks.length > 0 && tasks.every((t) => t.status === "completed");
-  const showTaskWidget = tasks.length > 0 && (
-    !allCompleted ||
-    (messagesAfterLastTaskUpdate >= 0 && messagesAfterLastTaskUpdate <= 6)
-  );
+  const allCompleted =
+    tasks.length > 0 && tasks.every((t) => t.status === "completed");
+  const showTaskWidget =
+    tasks.length > 0 &&
+    (!allCompleted ||
+      (messagesAfterLastTaskUpdate >= 0 && messagesAfterLastTaskUpdate <= 6));
 
   const hasExitPlan = useMemo(() => {
-    return messages.some(m =>
-      m.type === "assistant" && Array.isArray(m.message?.content) &&
-      m.message!.content.some((b: any) => b.type === "tool_use" && b.name === "ExitPlanMode")
+    return messages.some(
+      (m) =>
+        m.type === "assistant" &&
+        Array.isArray(m.message?.content) &&
+        m.message!.content.some(
+          (b: any) => b.type === "tool_use" && b.name === "ExitPlanMode",
+        ),
     );
   }, [messages]);
 
@@ -754,7 +889,11 @@ function SessionView(props: SessionViewProps) {
       const content = m.message?.content;
       if (!Array.isArray(content)) continue;
       for (const block of content) {
-        if (block.type === "tool_use" && block.name === "ExitPlanMode" && block.id) {
+        if (
+          block.type === "tool_use" &&
+          block.name === "ExitPlanMode" &&
+          block.id
+        ) {
           exitPlanIds.add(block.id);
         }
       }
@@ -775,20 +914,28 @@ function SessionView(props: SessionViewProps) {
 
   // Auto-restore permission state for pending ExitPlanMode after server reboot
   useEffect(() => {
-    if (pendingPlanApproval && session.paneId && session.status !== "permission") {
+    if (
+      pendingPlanApproval &&
+      session.paneId &&
+      session.status !== "permission"
+    ) {
       fetch(`/api/sessions/${sessionId}/status`, {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ event: "PermissionRequest", tool_name: "ExitPlanMode" }),
+        body: JSON.stringify({
+          event: "PermissionRequest",
+          tool_name: "ExitPlanMode",
+        }),
       }).catch(() => {});
     }
   }, [pendingPlanApproval, session.paneId, session.status, sessionId]);
 
   // If this session ends with a plan (ExitPlanMode), find the next (newer) session to link to
   const nextSlugSession = useMemo(() => {
-    if (!hasExitPlan || !olderSlugSessions?.length || !session.timestamp) return null;
+    if (!hasExitPlan || !olderSlugSessions?.length || !session.timestamp)
+      return null;
     const newer = olderSlugSessions
-      .filter(s => s.timestamp > session.timestamp)
+      .filter((s) => s.timestamp > session.timestamp)
       .sort((a, b) => a.timestamp - b.timestamp);
     return newer[0] || null;
   }, [hasExitPlan, olderSlugSessions, session.timestamp]);
@@ -833,7 +980,10 @@ function SessionView(props: SessionViewProps) {
             <div ref={topSentinelRef} className="h-px" />
             {loadingOlder && (
               <div className="flex items-center justify-center py-2">
-                <Loader2 size={16} className="animate-spin text-muted-foreground" />
+                <Loader2
+                  size={16}
+                  className="animate-spin text-muted-foreground"
+                />
               </div>
             )}
             {hasMore && !loadingOlder && (
@@ -845,7 +995,23 @@ function SessionView(props: SessionViewProps) {
               </button>
             )}
             {conversationMessages.map((message, i) => (
-              <MessageBlock key={message.uuid || i} message={message} sessionId={sessionId} subagentMap={enrichedSubagentMap} onNavigateSession={onNavigateSession} onOpenFile={onOpenFile} questionPending={!!session.questionData && session.status === "permission"} taskNotifications={taskNotifications} toolResultMap={toolResultMap} taskSubjects={taskSubjects} highlightedTaskId={highlightedTaskId} onHighlightTask={setHighlightedTaskId} toolDurationMap={toolDurationMap} />
+              <MessageBlock
+                key={message.uuid || i}
+                message={message}
+                sessionId={sessionId}
+                subagentMap={enrichedSubagentMap}
+                onNavigateSession={onNavigateSession}
+                onOpenFile={onOpenFile}
+                questionPending={
+                  !!session.questionData && session.status === "permission"
+                }
+                taskNotifications={taskNotifications}
+                toolResultMap={toolResultMap}
+                taskSubjects={taskSubjects}
+                highlightedTaskId={highlightedTaskId}
+                onHighlightTask={setHighlightedTaskId}
+                toolDurationMap={toolDurationMap}
+              />
             ))}
           </div>
           {nextSlugSession && onNavigateSession && (
@@ -853,10 +1019,24 @@ function SessionView(props: SessionViewProps) {
               onClick={() => onNavigateSession(nextSlugSession.id)}
               className="flex items-center gap-2 px-3 py-2 mt-2 rounded-lg border border-border bg-secondary hover:bg-accent transition-colors cursor-pointer"
             >
-              <span className="text-xs text-foreground">Continue to implementation</span>
-              <span className="text-[10px] text-muted-foreground truncate">{nextSlugSession.summary || nextSlugSession.display}</span>
-              <svg className="w-3.5 h-3.5 text-foreground ml-auto shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 5l7 7-7 7" />
+              <span className="text-xs text-foreground">
+                Continue to implementation
+              </span>
+              <span className="text-[10px] text-muted-foreground truncate">
+                {nextSlugSession.summary || nextSlugSession.display}
+              </span>
+              <svg
+                className="w-3.5 h-3.5 text-foreground ml-auto shrink-0"
+                fill="none"
+                stroke="currentColor"
+                viewBox="0 0 24 24"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M9 5l7 7-7 7"
+                />
               </svg>
             </button>
           )}
@@ -872,16 +1052,16 @@ function SessionView(props: SessionViewProps) {
               </div>
             </div>
           )}
-          {session.status === "responding" && (
-            <ThinkingIndicator />
-          )}
+          {session.status === "responding" && <ThinkingIndicator />}
           {session.status === "compacting" && (
             <div className="flex items-center gap-2 px-1 py-2">
               <span className="relative flex h-2 w-2">
                 <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-muted-foreground opacity-75" />
                 <span className="relative inline-flex rounded-full h-2 w-2 bg-muted-foreground" />
               </span>
-              <span className="text-[11px] text-muted-foreground font-medium">Compacting context...</span>
+              <span className="text-[11px] text-muted-foreground font-medium">
+                Compacting context...
+              </span>
             </div>
           )}
         </div>
@@ -895,20 +1075,33 @@ function SessionView(props: SessionViewProps) {
       {bgTasks.some((t) => !t.notification) && (
         <div className="border-t border-border bg-background/80 px-4 py-2">
           <div className="mx-auto max-w-3xl flex flex-col gap-1">
-            {bgTasks.filter((t) => !t.notification).map((t) => (
-              <div key={t.taskId} className="flex items-center gap-2 text-[11px] text-muted-foreground">
-                <Loader2 size={12} className="animate-spin text-muted-foreground shrink-0" />
-                <span className="truncate flex-1">{t.description}</span>
-                {t.outputFile && (
-                  <button
-                    onClick={() => setTailTarget({ filePath: t.outputFile!, description: t.description })}
-                    className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium text-foreground bg-muted hover:bg-accent transition-colors cursor-pointer"
-                  >
-                    Tail
-                  </button>
-                )}
-              </div>
-            ))}
+            {bgTasks
+              .filter((t) => !t.notification)
+              .map((t) => (
+                <div
+                  key={t.taskId}
+                  className="flex items-center gap-2 text-[11px] text-muted-foreground"
+                >
+                  <Loader2
+                    size={12}
+                    className="animate-spin text-muted-foreground shrink-0"
+                  />
+                  <span className="truncate flex-1">{t.description}</span>
+                  {t.outputFile && (
+                    <button
+                      onClick={() =>
+                        setTailTarget({
+                          filePath: t.outputFile!,
+                          description: t.description,
+                        })
+                      }
+                      className="shrink-0 px-1.5 py-0.5 rounded text-[10px] font-medium text-foreground bg-muted hover:bg-accent transition-colors cursor-pointer"
+                    >
+                      Tail
+                    </button>
+                  )}
+                </div>
+              ))}
           </div>
         </div>
       )}
@@ -918,7 +1111,12 @@ function SessionView(props: SessionViewProps) {
           <div className="mx-auto max-w-3xl flex items-end gap-2">
             {session.status === "permission" && session.questionData ? (
               (() => {
-                const questions = session.questionData as Array<{ question: string; header: string; options: Array<{ label: string; description: string }>; multiSelect: boolean }>;
+                const questions = session.questionData as Array<{
+                  question: string;
+                  header: string;
+                  options: Array<{ label: string; description: string }>;
+                  multiSelect: boolean;
+                }>;
                 const q = questions[0];
                 if (!q) return null;
                 return (
@@ -941,7 +1139,9 @@ function SessionView(props: SessionViewProps) {
                           title={opt.description}
                         >
                           <span className="font-medium">{opt.label}</span>
-                          <span className="text-[10px] text-muted-foreground leading-tight">{opt.description}</span>
+                          <span className="text-[10px] text-muted-foreground leading-tight">
+                            {opt.description}
+                          </span>
                         </button>
                       ))}
                     </div>
@@ -953,7 +1153,10 @@ function SessionView(props: SessionViewProps) {
                         onChange={(e) => setQuestionText(e.target.value)}
                         className="flex-1 rounded-lg border border-border bg-card px-3 py-1.5 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-ring"
                         onKeyDown={(e) => {
-                          if (e.key === "Enter" && navigator.maxTouchPoints === 0) {
+                          if (
+                            e.key === "Enter" &&
+                            navigator.maxTouchPoints === 0
+                          ) {
                             e.preventDefault();
                             handleAnswerFreeText();
                           }
@@ -977,7 +1180,9 @@ function SessionView(props: SessionViewProps) {
             ) : session.status === "permission" ? (
               <div className="flex-1 flex flex-col gap-2">
                 {session.permissionMessage && (
-                  <p className="text-xs text-muted-foreground text-center">{session.permissionMessage}</p>
+                  <p className="text-xs text-muted-foreground text-center">
+                    {session.permissionMessage}
+                  </p>
                 )}
                 <div className="flex gap-2">
                   <button
@@ -990,7 +1195,11 @@ function SessionView(props: SessionViewProps) {
                     }`}
                     title="Allow permission request"
                   >
-                    {permissionBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldCheck className="w-4 h-4" />}
+                    {permissionBusy ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <ShieldCheck className="w-4 h-4" />
+                    )}
                     <span>Allow</span>
                   </button>
                   <button
@@ -1003,7 +1212,11 @@ function SessionView(props: SessionViewProps) {
                     }`}
                     title="Deny permission request"
                   >
-                    {permissionBusy ? <Loader2 className="w-4 h-4 animate-spin" /> : <ShieldX className="w-4 h-4" />}
+                    {permissionBusy ? (
+                      <Loader2 className="w-4 h-4 animate-spin" />
+                    ) : (
+                      <ShieldX className="w-4 h-4" />
+                    )}
                     <span>Deny</span>
                   </button>
                 </div>
@@ -1027,7 +1240,13 @@ function SessionView(props: SessionViewProps) {
                   onChange={(e) => updateInput(e.target.value)}
                   className="flex-1 resize-none rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-ring"
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && navigator.maxTouchPoints === 0) {
+                    if (
+                      e.key === "Enter" &&
+                      !e.shiftKey &&
+                      !e.ctrlKey &&
+                      !e.metaKey &&
+                      navigator.maxTouchPoints === 0
+                    ) {
                       e.preventDefault();
                       sendMessage();
                     }
@@ -1058,7 +1277,9 @@ function SessionView(props: SessionViewProps) {
               onClick={onResurrect}
               className="w-full flex items-center justify-center gap-2 rounded-lg px-3 py-2 text-sm text-green-700 dark:text-green-400 bg-green-600/10 hover:bg-green-600/20 transition-colors cursor-pointer"
             >
-              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24"><path d="M8 5v14l11-7z" /></svg>
+              <svg className="w-4 h-4" fill="currentColor" viewBox="0 0 24 24">
+                <path d="M8 5v14l11-7z" />
+              </svg>
               <span>Resume session</span>
             </button>
           </div>

@@ -40,7 +40,7 @@ export function PlanSessionRenderer(props: PlanSessionRendererProps) {
   }, [planSessionId, showConversation, messages]);
 
   const conversationMessages = messages?.filter(
-    (m) => m.type === "user" || m.type === "assistant"
+    (m) => m.type === "user" || m.type === "assistant",
   );
 
   return (
@@ -56,14 +56,13 @@ export function PlanSessionRenderer(props: PlanSessionRendererProps) {
             <ChevronRight size={12} />
           )}
           <FileCode2 size={12} className="text-muted-foreground" />
-          <span>
-            {showConversation ? "Hide" : "View"} plan implementation
-          </span>
-          {conversationMessages !== undefined && conversationMessages !== null && (
-            <span className="text-[10px] text-muted-foreground/60 ml-1">
-              ({conversationMessages.length} messages)
-            </span>
-          )}
+          <span>{showConversation ? "Hide" : "View"} plan implementation</span>
+          {conversationMessages !== undefined &&
+            conversationMessages !== null && (
+              <span className="text-[10px] text-muted-foreground/60 ml-1">
+                ({conversationMessages.length} messages)
+              </span>
+            )}
         </button>
 
         {showConversation && (

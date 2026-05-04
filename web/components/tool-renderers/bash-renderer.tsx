@@ -1,4 +1,11 @@
-import { Terminal, Play, AlertTriangle, CheckCircle2, Copy, Check } from "lucide-react";
+import {
+  Terminal,
+  Play,
+  AlertTriangle,
+  CheckCircle2,
+  Copy,
+  Check,
+} from "lucide-react";
 import { useState } from "react";
 
 interface BashInput {
@@ -40,7 +47,9 @@ export function BashRenderer(props: BashRendererProps) {
           <Terminal size={14} className="text-muted-foreground" />
           <span className="text-xs font-medium text-foreground">Command</span>
           {description && (
-            <span className="text-xs text-muted-foreground truncate ml-1">— {description}</span>
+            <span className="text-xs text-muted-foreground truncate ml-1">
+              — {description}
+            </span>
           )}
           <button
             onClick={handleCopy}
@@ -74,7 +83,9 @@ export function BashResultRenderer(props: BashResultRendererProps) {
       <div className="w-full mt-2">
         <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 border border-border rounded-lg">
           <CheckCircle2 size={14} className="text-green-600" />
-          <span className="text-xs text-muted-foreground">Command completed successfully (no output)</span>
+          <span className="text-xs text-muted-foreground">
+            Command completed successfully (no output)
+          </span>
         </div>
       </div>
     );
@@ -96,21 +107,29 @@ export function BashResultRenderer(props: BashResultRendererProps) {
       >
         <div
           className={`flex items-center gap-2 px-3 py-2 border-b ${
-            isError ? "border-destructive/20 bg-destructive/10" : "border-border bg-muted/50"
+            isError
+              ? "border-destructive/20 bg-destructive/10"
+              : "border-border bg-muted/50"
           }`}
         >
           {isError ? (
             <>
               <AlertTriangle size={14} className="text-red-600" />
-              <span className="text-xs font-medium text-red-600">Error Output</span>
+              <span className="text-xs font-medium text-red-600">
+                Error Output
+              </span>
             </>
           ) : (
             <>
               <Play size={14} className="text-muted-foreground" />
-              <span className="text-xs font-medium text-foreground">Output</span>
+              <span className="text-xs font-medium text-foreground">
+                Output
+              </span>
             </>
           )}
-          <span className="text-xs text-muted-foreground ml-auto">{lines.length} lines</span>
+          <span className="text-xs text-muted-foreground ml-auto">
+            {lines.length} lines
+          </span>
         </div>
         <div className="overflow-x-auto ">
           <pre

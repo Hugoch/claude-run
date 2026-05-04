@@ -13,13 +13,16 @@ interface MarkdownExportProps {
   }>;
 }
 
-export function MarkdownExportButton({ session, messages }: MarkdownExportProps) {
+export function MarkdownExportButton({
+  session,
+  messages,
+}: MarkdownExportProps) {
   const [isOpen, setIsOpen] = useState(false);
   const [copied, setCopied] = useState(false);
 
   const generateMarkdown = useCallback(() => {
     const conversationMessages = messages.filter(
-      (m) => m.type === "user" || m.type === "assistant"
+      (m) => m.type === "user" || m.type === "assistant",
     );
 
     const summary = messages.find((m) => m.type === "summary") as any;
@@ -160,7 +163,10 @@ export function MarkdownExportButton({ session, messages }: MarkdownExportProps)
 
             <div className="flex-1 overflow-hidden flex flex-col">
               <div className="p-4 text-xs text-muted-foreground border-b border-border">
-                <p>Markdown content generated. You can copy and paste it into Notion, Obsidian, or any Markdown-compatible app.</p>
+                <p>
+                  Markdown content generated. You can copy and paste it into
+                  Notion, Obsidian, or any Markdown-compatible app.
+                </p>
               </div>
 
               <div className="flex-1 overflow-auto p-4">
@@ -168,7 +174,9 @@ export function MarkdownExportButton({ session, messages }: MarkdownExportProps)
                   {previewLines}
                   {hasMore && (
                     <span className="text-muted-foreground/60">
-                      {"\n\n... (Content truncated. Copy to get the full content.)"}
+                      {
+                        "\n\n... (Content truncated. Copy to get the full content.)"
+                      }
                     </span>
                   )}
                 </pre>

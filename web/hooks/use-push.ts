@@ -1,12 +1,15 @@
 import { useState, useEffect, useCallback } from "react";
 
-type PushState = "unsupported" | "default" | "granted" | "denied" | "subscribing";
+type PushState =
+  | "unsupported"
+  | "default"
+  | "granted"
+  | "denied"
+  | "subscribing";
 
 function urlBase64ToUint8Array(base64String: string): Uint8Array {
   const padding = "=".repeat((4 - (base64String.length % 4)) % 4);
-  const base64 = (base64String + padding)
-    .replace(/-/g, "+")
-    .replace(/_/g, "/");
+  const base64 = (base64String + padding).replace(/-/g, "+").replace(/_/g, "/");
   const rawData = window.atob(base64);
   const outputArray = new Uint8Array(rawData.length);
   for (let i = 0; i < rawData.length; ++i) {
@@ -15,7 +18,10 @@ function urlBase64ToUint8Array(base64String: string): Uint8Array {
   return outputArray;
 }
 
-export function usePush(): { state: PushState; subscribe: () => Promise<void> } {
+export function usePush(): {
+  state: PushState;
+  subscribe: () => Promise<void>;
+} {
   const [state, setState] = useState<PushState>("unsupported");
 
   useEffect(() => {

@@ -1,4 +1,10 @@
-export type SessionStatus = "active" | "responding" | "notification" | "permission" | "compacting" | null;
+export type SessionStatus =
+  | "active"
+  | "responding"
+  | "notification"
+  | "permission"
+  | "compacting"
+  | null;
 
 export interface Session {
   id: string;

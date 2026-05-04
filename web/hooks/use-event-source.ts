@@ -47,10 +47,7 @@ export function useEventSource(url: string, options: UseEventSourceOptions) {
       }
 
       // Always retry with exponential backoff, capped at 30s
-      const delay = Math.min(
-        1000 * Math.pow(2, retryCountRef.current),
-        30000
-      );
+      const delay = Math.min(1000 * Math.pow(2, retryCountRef.current), 30000);
       retryCountRef.current++;
 
       retryTimeoutRef.current = setTimeout(() => {

@@ -38,7 +38,10 @@ export function CopyButton(props: CopyButtonProps) {
       {copied ? (
         <Check size={12} className="text-green-600" />
       ) : (
-        <Copy size={12} className="text-muted-foreground hover:text-foreground" />
+        <Copy
+          size={12}
+          className="text-muted-foreground hover:text-foreground"
+        />
       )}
     </button>
   );

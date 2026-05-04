@@ -50,19 +50,25 @@ export function GrepRenderer(props: GrepRendererProps) {
           {input.path && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Path:</span>
-              <span className="text-xs font-mono text-foreground">{input.path}</span>
+              <span className="text-xs font-mono text-foreground">
+                {input.path}
+              </span>
             </div>
           )}
           {input.glob && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Glob:</span>
-              <span className="text-xs font-mono text-foreground">{input.glob}</span>
+              <span className="text-xs font-mono text-foreground">
+                {input.glob}
+              </span>
             </div>
           )}
           {input.type && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Type:</span>
-              <span className="text-xs font-mono text-foreground">{input.type}</span>
+              <span className="text-xs font-mono text-foreground">
+                {input.type}
+              </span>
             </div>
           )}
         </div>
@@ -83,7 +89,9 @@ export function GlobRenderer(props: GlobRendererProps) {
       <div className="bg-card/80 border border-border rounded-lg overflow-hidden">
         <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/50">
           <FolderOpen size={14} className="text-muted-foreground" />
-          <span className="text-xs font-medium text-foreground">Find Files</span>
+          <span className="text-xs font-medium text-foreground">
+            Find Files
+          </span>
         </div>
         <div className="p-3 space-y-2">
           <div className="flex items-center gap-2">
@@ -95,7 +103,9 @@ export function GlobRenderer(props: GlobRendererProps) {
           {input.path && (
             <div className="flex items-center gap-2">
               <span className="text-xs text-muted-foreground">Path:</span>
-              <span className="text-xs font-mono text-foreground">{input.path}</span>
+              <span className="text-xs font-mono text-foreground">
+                {input.path}
+              </span>
             </div>
           )}
         </div>
@@ -112,7 +122,9 @@ export function SearchResultRenderer(props: SearchResultRendererProps) {
       <div className="w-full mt-2">
         <div className="flex items-center gap-2 px-3 py-2 bg-muted/50 border border-border rounded-lg">
           <Search size={14} className="text-muted-foreground" />
-          <span className="text-xs text-muted-foreground">No matches found</span>
+          <span className="text-xs text-muted-foreground">
+            No matches found
+          </span>
         </div>
       </div>
     );
@@ -129,15 +141,27 @@ export function SearchResultRenderer(props: SearchResultRendererProps) {
         <div className="bg-card/80 border border-border rounded-lg overflow-hidden">
           <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/50">
             <FolderOpen size={14} className="text-muted-foreground" />
-            <span className="text-xs font-medium text-foreground">Files Found</span>
-            <span className="text-xs text-muted-foreground ml-auto">{lines.length} files</span>
+            <span className="text-xs font-medium text-foreground">
+              Files Found
+            </span>
+            <span className="text-xs text-muted-foreground ml-auto">
+              {lines.length} files
+            </span>
           </div>
           <div className="overflow-y-auto max-h-60">
             <ul className="divide-y divide-border">
               {displayLines.map((line, index) => (
-                <li key={index} className="group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/50">
-                  <FileText size={12} className="text-muted-foreground flex-shrink-0" />
-                  <span className="text-xs font-mono text-foreground truncate flex-1">{line}</span>
+                <li
+                  key={index}
+                  className="group flex items-center gap-2 px-3 py-1.5 hover:bg-muted/50"
+                >
+                  <FileText
+                    size={12}
+                    className="text-muted-foreground flex-shrink-0"
+                  />
+                  <span className="text-xs font-mono text-foreground truncate flex-1">
+                    {line}
+                  </span>
                   <div className="opacity-0 group-hover:opacity-100 transition-opacity">
                     <CopyButton text={line} />
                   </div>
@@ -161,7 +185,9 @@ export function SearchResultRenderer(props: SearchResultRendererProps) {
         <div className="flex items-center gap-2 px-3 py-2 border-b border-border bg-muted/50">
           <Search size={14} className="text-muted-foreground" />
           <span className="text-xs font-medium text-foreground">Results</span>
-          <span className="text-xs text-muted-foreground ml-auto">{lines.length} matches</span>
+          <span className="text-xs text-muted-foreground ml-auto">
+            {lines.length} matches
+          </span>
         </div>
         <div className="overflow-x-auto ">
           <pre className="text-xs font-mono p-3 text-foreground whitespace-pre-wrap">

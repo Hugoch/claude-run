@@ -1,6 +1,14 @@
 import { useState, useRef, useCallback } from "react";
 import { createTwoFilesPatch } from "diff";
-import { FileEdit, Plus, Minus, FilePlus2, Eye, Code, ExternalLink } from "lucide-react";
+import {
+  FileEdit,
+  Plus,
+  Minus,
+  FilePlus2,
+  Eye,
+  Code,
+  ExternalLink,
+} from "lucide-react";
 import { CopyButton } from "./copy-button";
 
 interface EditInput {
@@ -31,7 +39,10 @@ function getFileName(filePath: string) {
 
 function parseDiff(diffText: string) {
   const lines = diffText.split("\n");
-  const result: Array<{ type: "add" | "remove" | "context" | "header"; content: string }> = [];
+  const result: Array<{
+    type: "add" | "remove" | "context" | "header";
+    content: string;
+  }> = [];
 
   for (const line of lines) {
     if (line.startsWith("@@")) {
@@ -59,9 +70,17 @@ export function EditRenderer(props: EditRendererProps) {
   const newStr = input.new_string || "";
   const fileName = getFileName(input.file_path);
 
-  const diff = createTwoFilesPatch("a/" + fileName, "b/" + fileName, oldStr, newStr, "", "", {
-    context: 3,
-  });
+  const diff = createTwoFilesPatch(
+    "a/" + fileName,
+    "b/" + fileName,
+    oldStr,
+    newStr,
+    "",
+    "",
+    {
+      context: 3,
+    },
+  );
 
   const parsedLines = parseDiff(diff);
   const addedLines = parsedLines.filter((l) => l.type === "add").length;
@@ -135,7 +154,9 @@ export function EditRenderer(props: EditRendererProps) {
               }
               return (
                 <div key={index} className="px-3 py-0.5 text-muted-foreground">
-                  <span className="select-none text-muted-foreground/60 mr-2"> </span>
+                  <span className="select-none text-muted-foreground/60 mr-2">
+                    {" "}
+                  </span>
                   {line.content || " "}
                 </div>
               );
@@ -154,29 +175,36 @@ function isHtmlFile(filePath: string) {
 export function WriteRenderer(props: WriteRendererProps) {
   const { input, onOpenFile } = props;
   const isHtml = input?.file_path && isHtmlFile(input.file_path);
-  const [view, setView] = useState<"preview" | "source">(isHtml ? "preview" : "source");
+  const [view, setView] = useState<"preview" | "source">(
+    isHtml ? "preview" : "source",
+  );
   const [iframeHeight, setIframeHeight] = useState(400);
   const dragging = useRef(false);
   const startY = useRef(0);
   const startH = useRef(0);
 
-  const onDragStart = useCallback((e: React.MouseEvent) => {
-    e.preventDefault();
-    dragging.current = true;
-    startY.current = e.clientY;
-    startH.current = iframeHeight;
-    const onMove = (ev: MouseEvent) => {
-      if (!dragging.current) return;
-      setIframeHeight(Math.max(150, startH.current + ev.clientY - startY.current));
-    };
-    const onUp = () => {
-      dragging.current = false;
-      window.removeEventListener("mousemove", onMove);
-      window.removeEventListener("mouseup", onUp);
-    };
-    window.addEventListener("mousemove", onMove);
-    window.addEventListener("mouseup", onUp);
-  }, [iframeHeight]);
+  const onDragStart = useCallback(
+    (e: React.MouseEvent) => {
+      e.preventDefault();
+      dragging.current = true;
+      startY.current = e.clientY;
+      startH.current = iframeHeight;
+      const onMove = (ev: MouseEvent) => {
+        if (!dragging.current) return;
+        setIframeHeight(
+          Math.max(150, startH.current + ev.clientY - startY.current),
+        );
+      };
+      const onUp = () => {
+        dragging.current = false;
+        window.removeEventListener("mousemove", onMove);
+        window.removeEventListener("mouseup", onUp);
+      };
+      window.addEventListener("mousemove", onMove);
+      window.addEventListener("mouseup", onUp);
+    },
+    [iframeHeight],
+  );
 
   if (!input || !input.file_path) {
     return null;
@@ -197,7 +225,9 @@ export function WriteRenderer(props: WriteRendererProps) {
               <button
                 onClick={() => setView("preview")}
                 className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors cursor-pointer ${
-                  view === "preview" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  view === "preview"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <Eye size={10} />
@@ -206,7 +236,9 @@ export function WriteRenderer(props: WriteRendererProps) {
               <button
                 onClick={() => setView("source")}
                 className={`flex items-center gap-1 px-1.5 py-0.5 rounded text-[10px] transition-colors cursor-pointer ${
-                  view === "source" ? "bg-background text-foreground shadow-sm" : "text-muted-foreground hover:text-foreground"
+                  view === "source"
+                    ? "bg-background text-foreground shadow-sm"
+                    : "text-muted-foreground hover:text-foreground"
                 }`}
               >
                 <Code size={10} />
@@ -215,7 +247,9 @@ export function WriteRenderer(props: WriteRendererProps) {
             </div>
           )}
           <div className="flex items-center gap-1 ml-auto">
-            <span className="text-xs text-muted-foreground">{lineCount} lines</span>
+            <span className="text-xs text-muted-foreground">
+              {lineCount} lines
+            </span>
             <CopyButton text={input.file_path} />
             {onOpenFile && (
               <button
@@ -230,8 +264,16 @@ export function WriteRenderer(props: WriteRendererProps) {
         </div>
         {isHtml && view === "preview" ? (
           <>
-            <iframe sandbox="allow-scripts" srcDoc={content} className="w-full border-0" style={{ height: iframeHeight }} />
-            <div onMouseDown={onDragStart} className="h-1.5 cursor-row-resize bg-muted/50 hover:bg-muted border-t border-border flex items-center justify-center">
+            <iframe
+              sandbox="allow-scripts"
+              srcDoc={content}
+              className="w-full border-0"
+              style={{ height: iframeHeight }}
+            />
+            <div
+              onMouseDown={onDragStart}
+              className="h-1.5 cursor-row-resize bg-muted/50 hover:bg-muted border-t border-border flex items-center justify-center"
+            >
               <div className="w-8 h-0.5 rounded-full bg-muted-foreground/30" />
             </div>
           </>
@@ -240,7 +282,9 @@ export function WriteRenderer(props: WriteRendererProps) {
             <pre className="text-xs font-mono p-3 text-foreground">
               {content.slice(0, 500)}
               {content.length > 500 && (
-                <span className="text-muted-foreground">... ({content.length - 500} more chars)</span>
+                <span className="text-muted-foreground">
+                  ... ({content.length - 500} more chars)
+                </span>
               )}
             </pre>
           </div>

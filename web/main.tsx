@@ -3,11 +3,17 @@ import { createRoot } from "react-dom/client";
 import App from "./app";
 import "./index.css";
 
-class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { error: Error | null }> {
+class ErrorBoundary extends React.Component<
+  { children: React.ReactNode },
+  { error: Error | null }
+> {
   state = { error: null as Error | null };
-  static getDerivedStateFromError(error: Error) { return { error }; }
+  static getDerivedStateFromError(error: Error) {
+    return { error };
+  }
   componentDidCatch(error: Error, info: React.ErrorInfo) {
-    const stack = (error.stack || "") + "\nComponent: " + (info.componentStack || "");
+    const stack =
+      (error.stack || "") + "\nComponent: " + (info.componentStack || "");
     fetch("/api/client-error", {
       method: "POST",
       headers: { "Content-Type": "application/json" },
@@ -19,8 +25,17 @@ class ErrorBoundary extends React.Component<{ children: React.ReactNode }, { err
       return (
         <div style={{ padding: 20, fontFamily: "monospace", color: "#ef4444" }}>
           <h2>Something went wrong</h2>
-          <pre style={{ whiteSpace: "pre-wrap", fontSize: 12 }}>{this.state.error.message}{"\n"}{this.state.error.stack}</pre>
-          <button onClick={() => window.location.reload()} style={{ marginTop: 10, padding: "6px 12px", cursor: "pointer" }}>Reload</button>
+          <pre style={{ whiteSpace: "pre-wrap", fontSize: 12 }}>
+            {this.state.error.message}
+            {"\n"}
+            {this.state.error.stack}
+          </pre>
+          <button
+            onClick={() => window.location.reload()}
+            style={{ marginTop: 10, padding: "6px 12px", cursor: "pointer" }}
+          >
+            Reload
+          </button>
         </div>
       );
     }
@@ -55,5 +70,5 @@ createRoot(document.getElementById("root")!).render(
     <ErrorBoundary>
       <App />
     </ErrorBoundary>
-  </StrictMode>
+  </StrictMode>,
 );

@@ -1,5 +1,12 @@
 import { useState } from "react";
-import { Circle, CircleCheck, Loader2, ListTodo, ChevronDown, ChevronRight } from "lucide-react";
+import {
+  Circle,
+  CircleCheck,
+  Loader2,
+  ListTodo,
+  ChevronDown,
+  ChevronRight,
+} from "lucide-react";
 import type { ConversationMessage } from "@claude-run/api";
 
 export interface TaskItem {
@@ -111,14 +118,17 @@ export function TaskListWidget({ tasks }: { tasks: TaskItem[] }) {
               onClick={() => setShowCompleted(!showCompleted)}
               className="w-full flex items-center gap-2 px-3 py-1.5 text-[11px] text-muted-foreground hover:text-muted-foreground hover:bg-muted/30 transition-colors cursor-pointer"
             >
-              {showCompleted ? <ChevronDown size={12} /> : <ChevronRight size={12} />}
+              {showCompleted ? (
+                <ChevronDown size={12} />
+              ) : (
+                <ChevronRight size={12} />
+              )}
               <span>{completedCount} completed</span>
             </button>
           </li>
         )}
-        {(showCompleted || allCompleted) && completed.map((task) => (
-          <TaskRow key={task.id} task={task} />
-        ))}
+        {(showCompleted || allCompleted) &&
+          completed.map((task) => <TaskRow key={task.id} task={task} />)}
         {active.map((task) => (
           <TaskRow key={task.id} task={task} />
         ))}

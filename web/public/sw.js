@@ -14,10 +14,12 @@ self.addEventListener("push", (event) => {
       const badge = self.navigator?.setAppBadge || navigator?.setAppBadge;
       if (badge) {
         const notifications = await self.registration.getNotifications();
-        const uniqueTags = new Set(notifications.map(n => n.tag || "default"));
+        const uniqueTags = new Set(
+          notifications.map((n) => n.tag || "default"),
+        );
         await badge.call(self.navigator || navigator, uniqueTags.size);
       }
-    })
+    }),
   );
 });
 
@@ -39,7 +41,10 @@ self.addEventListener("notificationclick", (event) => {
       } else {
         (self.navigator || navigator).setAppBadge?.(remaining.length);
       }
-      const clientList = await clients.matchAll({ type: "window", includeUncontrolled: true });
+      const clientList = await clients.matchAll({
+        type: "window",
+        includeUncontrolled: true,
+      });
       for (const client of clientList) {
         if (client.url.includes(self.location.origin)) {
           client.focus();
@@ -48,14 +53,15 @@ self.addEventListener("notificationclick", (event) => {
         }
       }
       return clients.openWindow(url);
-    })()
+    })(),
   );
 });
 
 self.addEventListener("fetch", (event) => {
   const url = new URL(event.request.url);
   if (url.pathname === "/share") {
-    const text = url.searchParams.get("text") || url.searchParams.get("url") || "";
+    const text =
+      url.searchParams.get("text") || url.searchParams.get("url") || "";
     event.respondWith(Response.redirect(`/?share=${encodeURIComponent(text)}`));
   }
 });

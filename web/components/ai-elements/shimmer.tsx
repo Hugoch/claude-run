@@ -16,7 +16,7 @@ export const Shimmer = ({
   <span
     className={cn(
       "inline-block bg-gradient-to-r from-current via-muted-foreground/40 to-current bg-clip-text text-transparent bg-[length:200%_100%] animate-[shimmer_2s_linear_infinite]",
-      className
+      className,
     )}
     style={{ animationDuration: `${duration}s` }}
     {...props}
