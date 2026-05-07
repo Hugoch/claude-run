@@ -75,17 +75,39 @@ async fn generate_summary(state: &Arc<AppState>, session_id: &str) {
         .and_then(|m| m.summary.clone());
 
     if let Some(summary) = compaction_summary {
-        let truncated: String = summary.chars().take(200).collect();
+        // Generate a short title from the compaction summary via LLM
+        let prompt = format!(
+            "Here is an internal summary of a coding session.\n\
+             Write a short title (2-5 words, max 40 chars) that names the task or feature.\n\
+             Like a branch name but human-readable. Examples: \"CDN retry logic\", \"Fix auth middleware\", \"claude-run model selector\".\n\
+             Reply with ONLY the title, no quotes or prefix.\n\n\
+             <summary>\n{}\n</summary>",
+            summary.chars().take(500).collect::<String>()
+        );
+        let title = match Command::new("claude")
+            .args(["-p", "--model", "haiku", "--no-session-persistence", "--dangerously-skip-permissions"])
+            .arg(&prompt)
+            .env_remove("CLAUDECODE")
+            .output()
+            .await
+        {
+            Ok(o) if o.status.success() => {
+                let t = String::from_utf8_lossy(&o.stdout).trim().to_string();
+                if !t.is_empty() && t.len() <= 60 { t } else { summary.chars().take(40).collect() }
+            }
+            _ => summary.chars().take(40).collect(),
+        };
         eprintln!(
-            "[summarizer] using compaction summary for {}",
-            &session_id[..12.min(session_id.len())]
+            "[summarizer] title from compaction for {}: {:?}",
+            &session_id[..12.min(session_id.len())],
+            title
         );
         let msg_count = count_session_messages(state, session_id).await;
         state
             .summary_cache
-            .insert(session_id.to_string(), (truncated.clone(), msg_count));
-        save_summary(state, session_id, &truncated, msg_count).await;
-        update_tab_name(state, session_id, &truncated).await;
+            .insert(session_id.to_string(), (title.clone(), msg_count));
+        save_summary(state, session_id, &title, msg_count).await;
+        update_tab_name(state, session_id, &title).await;
         return;
     }
 
@@ -134,19 +156,21 @@ async fn generate_summary(state: &Arc<AppState>, session_id: &str) {
 
     let prompt = if let Some(ref prev) = prev_summary {
         format!(
-            "Previous summary: {}\n\n\
-             Here are recent messages from a Claude Code conversation.\n\
-             Update the summary based on these new messages. \
-             Write 1 concise sentence (max 100 chars).\n\
-             Reply with ONLY the summary, no quotes or prefix.\n\n\
+            "Previous title: {}\n\n\
+             Here are recent messages from a coding session.\n\
+             Write a short title (2-5 words, max 40 chars) that names the task or feature.\n\
+             Like a branch name but human-readable. Examples: \"CDN retry logic\", \"Fix auth middleware\", \"claude-run model selector\".\n\
+             Update the title only if the topic changed significantly.\n\
+             Reply with ONLY the title, no quotes or prefix.\n\n\
              <messages>\n{}\n</messages>",
             prev, conversation_text
         )
     } else {
         format!(
-            "Here are recent messages from a Claude Code conversation.\n\
-             Summarize what the user is working on in 1 concise sentence (max 100 chars).\n\
-             Reply with ONLY the summary, no quotes or prefix.\n\n\
+            "Here are recent messages from a coding session.\n\
+             Write a short title (2-5 words, max 40 chars) that names the task or feature.\n\
+             Like a branch name but human-readable. Examples: \"CDN retry logic\", \"Fix auth middleware\", \"claude-run model selector\".\n\
+             Reply with ONLY the title, no quotes or prefix.\n\n\
              <messages>\n{}\n</messages>",
             conversation_text
         )
@@ -173,7 +197,7 @@ async fn generate_summary(state: &Arc<AppState>, session_id: &str) {
     }
 
     let summary = String::from_utf8_lossy(&output.stdout).trim().to_string();
-    if summary.is_empty() || summary.len() > 200 {
+    if summary.is_empty() || summary.len() > 60 {
         eprintln!("[summarizer] bad summary (len={}): {:?}", summary.len(), summary.chars().take(50).collect::<String>());
         return;
     }
@@ -209,8 +233,8 @@ async fn set_early_summary(state: &Arc<AppState>, session_id: &str) {
         return;
     }
 
-    let truncated: String = text.chars().take(80).collect();
-    let summary = if text.chars().count() > 80 {
+    let truncated: String = text.chars().take(40).collect();
+    let summary = if text.chars().count() > 40 {
         format!("{}...", truncated)
     } else {
         truncated
