@@ -47,10 +47,7 @@ pub async fn load_tags(state: &AppState) {
             Ok(c) => c,
             Err(_) => continue,
         };
-        let tags: Vec<String> = content
-            .lines()
-            .filter_map(normalize)
-            .collect();
+        let tags: Vec<String> = content.lines().filter_map(normalize).collect();
         let tags = dedupe_keep_order(tags);
         if !tags.is_empty() {
             state.tags_cache.insert(session_id, tags);

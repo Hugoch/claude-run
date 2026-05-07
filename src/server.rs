@@ -730,11 +730,7 @@ async fn open_url(
     StatusCode::OK
 }
 
-pub async fn rename_zellij_tab(
-    pane_id: &str,
-    zellij_session: Option<&str>,
-    name: &str,
-) {
+pub async fn rename_zellij_tab(pane_id: &str, zellij_session: Option<&str>, name: &str) {
     let panes_output = match zellij_cmd(zellij_session)
         .args(["action", "list-panes", "--json", "--tab"])
         .output()
@@ -744,11 +740,10 @@ pub async fn rename_zellij_tab(
         _ => return,
     };
 
-    let panes: Vec<serde_json::Value> =
-        match serde_json::from_slice(&panes_output.stdout) {
-            Ok(v) => v,
-            Err(_) => return,
-        };
+    let panes: Vec<serde_json::Value> = match serde_json::from_slice(&panes_output.stdout) {
+        Ok(v) => v,
+        Err(_) => return,
+    };
 
     let pane_id_num: u64 = match pane_id.parse() {
         Ok(n) => n,
@@ -769,7 +764,9 @@ pub async fn rename_zellij_tab(
         .iter()
         .filter(|p| {
             p.get("tab_id").and_then(|v| v.as_u64()) == Some(tab_id)
-                && p.get("is_selectable").and_then(|v| v.as_bool()).unwrap_or(false)
+                && p.get("is_selectable")
+                    .and_then(|v| v.as_bool())
+                    .unwrap_or(false)
         })
         .count();
     if tab_pane_count > 1 {
@@ -778,7 +775,12 @@ pub async fn rename_zellij_tab(
 
     let truncated: String = name.chars().take(60).collect();
     let _ = zellij_cmd(zellij_session)
-        .args(["action", "rename-tab-by-id", &tab_id.to_string(), &truncated])
+        .args([
+            "action",
+            "rename-tab-by-id",
+            &tab_id.to_string(),
+            &truncated,
+        ])
         .output()
         .await;
 }
@@ -786,7 +788,12 @@ pub async fn rename_zellij_tab(
 fn get_anthropic_api_key() -> Option<String> {
     // Try macOS keychain first (where Claude Code stores OAuth credentials)
     if let Ok(output) = std::process::Command::new("security")
-        .args(["find-generic-password", "-s", "Claude Code-credentials", "-w"])
+        .args([
+            "find-generic-password",
+            "-s",
+            "Claude Code-credentials",
+            "-w",
+        ])
         .output()
     {
         if output.status.success() {
@@ -833,25 +840,28 @@ async fn get_models() -> impl IntoResponse {
         }
 
         match request.send().await {
-            Ok(resp) if resp.status().is_success() => match resp.json::<serde_json::Value>().await
-            {
-                Ok(body) => {
-                    if let Some(data) = body.get("data").and_then(|d| d.as_array()) {
-                        models.extend(data.clone());
+            Ok(resp) if resp.status().is_success() => {
+                match resp.json::<serde_json::Value>().await {
+                    Ok(body) => {
+                        if let Some(data) = body.get("data").and_then(|d| d.as_array()) {
+                            models.extend(data.clone());
+                        }
+                        if body.get("has_more").and_then(|h| h.as_bool()) == Some(true) {
+                            after_id = body
+                                .get("last_id")
+                                .and_then(|id| id.as_str())
+                                .map(|s| s.to_string());
+                        } else {
+                            break;
+                        }
                     }
-                    if body.get("has_more").and_then(|h| h.as_bool()) == Some(true) {
-                        after_id = body
-                            .get("last_id")
-                            .and_then(|id| id.as_str())
-                            .map(|s| s.to_string());
-                    } else {
-                        break;
+                    Err(err) => {
+                        return Json(
+                            serde_json::json!({ "error": format!("Failed to parse response: {}", err) }),
+                        )
                     }
                 }
-                Err(err) => {
-                    return Json(serde_json::json!({ "error": format!("Failed to parse response: {}", err) }))
-                }
-            },
+            }
             Ok(resp) => {
                 let status = resp.status().as_u16();
                 let text = resp.text().await.unwrap_or_default();
@@ -886,9 +896,17 @@ async fn run_in_zellij(
         if let Some(dir) = cwd {
             args.extend(["--cwd".to_string(), dir.to_string()]);
         }
-        args.extend(["--".to_string(), "sh".to_string(), "-c".to_string(), shell_cmd.to_string()]);
+        args.extend([
+            "--".to_string(),
+            "sh".to_string(),
+            "-c".to_string(),
+            shell_cmd.to_string(),
+        ]);
 
-        eprintln!("[{}] running pane in tab {}: zellij {:?}", label, tab_id, args);
+        eprintln!(
+            "[{}] running pane in tab {}: zellij {:?}",
+            label, tab_id, args
+        );
         match zellij_cmd(zellij_session).args(&args).output().await {
             Ok(output) if output.status.success() => {
                 eprintln!("[{}] success", label);
@@ -910,7 +928,12 @@ async fn run_in_zellij(
         if let Some(dir) = cwd {
             args.extend(["--cwd".to_string(), dir.to_string()]);
         }
-        args.extend(["--".to_string(), "sh".to_string(), "-c".to_string(), shell_cmd.to_string()]);
+        args.extend([
+            "--".to_string(),
+            "sh".to_string(),
+            "-c".to_string(),
+            shell_cmd.to_string(),
+        ]);
 
         eprintln!("[{}] running new tab: zellij {:?}", label, args);
         match zellij_cmd(zellij_session).args(&args).output().await {
@@ -988,7 +1011,11 @@ async fn resurrect_session(
 ) -> impl IntoResponse {
     eprintln!(
         "[resurrect] session={} project={} zellij_session={:?} skip={:?} target_tab={:?}",
-        id, body.project, body.zellij_session, body.dangerously_skip_permissions, body.target_tab_id
+        id,
+        body.project,
+        body.zellij_session,
+        body.dangerously_skip_permissions,
+        body.target_tab_id
     );
 
     // Ensure the Zellij session exists (create if needed)

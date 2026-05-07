@@ -46,8 +46,7 @@ pub fn ensure_certs(hostname: &str) -> Result<TlsCerts> {
         .join(".claude")
         .join("certs");
 
-    std::fs::create_dir_all(&certs_dir)
-        .context("Failed to create ~/.claude/certs/ directory")?;
+    std::fs::create_dir_all(&certs_dir).context("Failed to create ~/.claude/certs/ directory")?;
 
     let cert_path = certs_dir.join(format!("{hostname}.crt"));
     let key_path = certs_dir.join(format!("{hostname}.key"));

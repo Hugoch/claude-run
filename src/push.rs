@@ -58,10 +58,7 @@ pub fn load_subscriptions(claude_dir: &str) -> Vec<PushSubscription> {
 }
 
 /// Save subscriptions to disk.
-pub fn save_subscriptions(
-    claude_dir: &str,
-    subs: &dashmap::DashMap<String, PushSubscription>,
-) {
+pub fn save_subscriptions(claude_dir: &str, subs: &dashmap::DashMap<String, PushSubscription>) {
     let path = format!("{}/push-subscriptions.json", claude_dir);
     let list: Vec<PushSubscription> = subs.iter().map(|e| e.value().clone()).collect();
     if let Ok(json) = serde_json::to_string_pretty(&list) {
@@ -72,23 +69,37 @@ pub fn save_subscriptions(
 /// Send a URL-opening push notification to all subscribers.
 pub async fn send_url_notification(state: &AppState, url: &str) {
     let domain = url.split('/').nth(2).unwrap_or(url);
-    send_push(state, &serde_json::json!({
-        "title": "Open URL",
-        "body": domain,
-        "tag": "open-url",
-        "url": url,
-    })).await;
+    send_push(
+        state,
+        &serde_json::json!({
+            "title": "Open URL",
+            "body": domain,
+            "tag": "open-url",
+            "url": url,
+        }),
+    )
+    .await;
 }
 
 /// Send push notification to all subscribers.
-pub async fn send_notification(state: &AppState, title: &str, body: &str, session_id: &str, project: &str) {
-    send_push(state, &serde_json::json!({
-        "title": title,
-        "body": body,
-        "tag": session_id,
-        "sessionId": session_id,
-        "project": project,
-    })).await;
+pub async fn send_notification(
+    state: &AppState,
+    title: &str,
+    body: &str,
+    session_id: &str,
+    project: &str,
+) {
+    send_push(
+        state,
+        &serde_json::json!({
+            "title": title,
+            "body": body,
+            "tag": session_id,
+            "sessionId": session_id,
+            "project": project,
+        }),
+    )
+    .await;
 }
 
 /// Send a push payload to all subscribers.
@@ -112,28 +123,27 @@ async fn send_push(state: &AppState, payload: &serde_json::Value) {
         let sub = entry.value();
         let sub_info = SubscriptionInfo::new(&sub.endpoint, &sub.keys.p256dh, &sub.keys.auth);
 
-        let sig = match VapidSignatureBuilder::from_pem(
-            Cursor::new(&state.vapid_private_pem),
-            &sub_info,
-        ) {
-            Ok(mut builder) => {
-                builder.add_claim(
-                    "sub",
-                    serde_json::Value::String("mailto:noreply@xcid.fr".into()),
-                );
-                match builder.build() {
-                    Ok(sig) => sig,
-                    Err(e) => {
-                        eprintln!("[push] failed to build VAPID sig: {}", e);
-                        continue;
+        let sig =
+            match VapidSignatureBuilder::from_pem(Cursor::new(&state.vapid_private_pem), &sub_info)
+            {
+                Ok(mut builder) => {
+                    builder.add_claim(
+                        "sub",
+                        serde_json::Value::String("mailto:noreply@xcid.fr".into()),
+                    );
+                    match builder.build() {
+                        Ok(sig) => sig,
+                        Err(e) => {
+                            eprintln!("[push] failed to build VAPID sig: {}", e);
+                            continue;
+                        }
                     }
                 }
-            }
-            Err(e) => {
-                eprintln!("[push] failed to create VAPID builder: {}", e);
-                continue;
-            }
-        };
+                Err(e) => {
+                    eprintln!("[push] failed to create VAPID builder: {}", e);
+                    continue;
+                }
+            };
 
         let mut msg_builder = WebPushMessageBuilder::new(&sub_info);
         msg_builder.set_payload(ContentEncoding::Aes128Gcm, &payload_bytes);
@@ -149,7 +159,10 @@ async fn send_push(state: &AppState, payload: &serde_json::Value) {
 
         match client.send(message).await {
             Ok(_) => {
-                eprintln!("[push] sent OK to {}", &sub.endpoint[..80.min(sub.endpoint.len())]);
+                eprintln!(
+                    "[push] sent OK to {}",
+                    &sub.endpoint[..80.min(sub.endpoint.len())]
+                );
             }
             Err(e) => match e {
                 WebPushError::EndpointNotValid(_) | WebPushError::EndpointNotFound(_) => {
@@ -159,7 +172,7 @@ async fn send_push(state: &AppState, payload: &serde_json::Value) {
                 _ => {
                     eprintln!("[push] send error: {}", e);
                 }
-            }
+            },
         }
     }
 

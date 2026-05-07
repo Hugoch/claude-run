@@ -74,7 +74,11 @@ pub async fn start_watcher(state: Arc<AppState>) -> anyhow::Result<()> {
             }
 
             if dev_mode {
-                eprintln!("[watcher] watching {} and {}", claude_dir_clone.display(), projects_dir_clone.display());
+                eprintln!(
+                    "[watcher] watching {} and {}",
+                    claude_dir_clone.display(),
+                    projects_dir_clone.display()
+                );
             }
 
             loop {
@@ -157,7 +161,9 @@ fn emit_change(state: &AppState, path: &Path) {
             if state.dev_mode {
                 eprintln!("[watcher] session file: {}", session_id);
             }
-            state.file_index.insert(session_id.clone(), file_path.clone());
+            state
+                .file_index
+                .insert(session_id.clone(), file_path.clone());
             let _ = state.session_tx.send((session_id, file_path));
         }
     }

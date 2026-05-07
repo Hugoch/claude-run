@@ -7,7 +7,9 @@ fn main() {
 
     // Only build frontend if dist/web doesn't exist or we're in release mode
     let dist_web = std::path::Path::new("dist/web");
-    let is_release = std::env::var("PROFILE").map(|p| p == "release").unwrap_or(false);
+    let is_release = std::env::var("PROFILE")
+        .map(|p| p == "release")
+        .unwrap_or(false);
 
     if !dist_web.exists() || is_release {
         eprintln!("Building frontend with pnpm...");

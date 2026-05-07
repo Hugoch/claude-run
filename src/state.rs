@@ -1,5 +1,5 @@
-use std::sync::Arc;
 use std::sync::atomic::{AtomicBool, AtomicU64, Ordering};
+use std::sync::Arc;
 use std::time::Instant;
 
 use dashmap::DashMap;
@@ -61,7 +61,12 @@ pub struct AppState {
 }
 
 impl AppState {
-    pub fn new(claude_dir: String, dev_mode: bool, vapid_private_pem: Vec<u8>, vapid_public_base64: String) -> Arc<Self> {
+    pub fn new(
+        claude_dir: String,
+        dev_mode: bool,
+        vapid_private_pem: Vec<u8>,
+        vapid_public_base64: String,
+    ) -> Arc<Self> {
         let projects_dir = format!("{}/projects", claude_dir);
         let (history_tx, _) = broadcast::channel(64);
         let (session_tx, _) = broadcast::channel(256);
@@ -104,7 +109,13 @@ impl AppState {
         self.history_dirty.store(true, Ordering::Release);
     }
 
-    pub fn set_session_status(&self, id: &str, status: SessionStatus, pane_id: Option<String>, zellij_session: Option<String>) {
+    pub fn set_session_status(
+        &self,
+        id: &str,
+        status: SessionStatus,
+        pane_id: Option<String>,
+        zellij_session: Option<String>,
+    ) {
         match &status {
             None => {
                 self.session_statuses.remove(id);
@@ -113,7 +124,8 @@ impl AppState {
             Some(_) => {
                 self.session_statuses.insert(id.to_string(), status.clone());
                 if let Some(pane) = pane_id {
-                    self.session_panes.insert(id.to_string(), (pane, zellij_session, true));
+                    self.session_panes
+                        .insert(id.to_string(), (pane, zellij_session, true));
                 }
             }
         }

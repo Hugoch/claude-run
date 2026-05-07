@@ -85,7 +85,13 @@ async fn generate_summary(state: &Arc<AppState>, session_id: &str) {
             summary.chars().take(500).collect::<String>()
         );
         let title = match Command::new("claude")
-            .args(["-p", "--model", "haiku", "--no-session-persistence", "--dangerously-skip-permissions"])
+            .args([
+                "-p",
+                "--model",
+                "haiku",
+                "--no-session-persistence",
+                "--dangerously-skip-permissions",
+            ])
             .arg(&prompt)
             .env_remove("CLAUDECODE")
             .output()
@@ -93,7 +99,11 @@ async fn generate_summary(state: &Arc<AppState>, session_id: &str) {
         {
             Ok(o) if o.status.success() => {
                 let t = String::from_utf8_lossy(&o.stdout).trim().to_string();
-                if !t.is_empty() && t.len() <= 60 { t } else { summary.chars().take(40).collect() }
+                if !t.is_empty() && t.len() <= 60 {
+                    t
+                } else {
+                    summary.chars().take(40).collect()
+                }
             }
             _ => summary.chars().take(40).collect(),
         };
@@ -132,7 +142,11 @@ async fn generate_summary(state: &Arc<AppState>, session_id: &str) {
             continue;
         }
 
-        let max_chars = if msg.msg_type == "assistant" { 200 } else { 300 };
+        let max_chars = if msg.msg_type == "assistant" {
+            200
+        } else {
+            300
+        };
         let truncated: String = text.chars().take(max_chars).collect();
         let prefix = if msg.msg_type == "assistant" {
             "Assistant: "
@@ -177,7 +191,13 @@ async fn generate_summary(state: &Arc<AppState>, session_id: &str) {
     };
 
     let output = match Command::new("claude")
-        .args(["-p", "--model", "haiku", "--no-session-persistence", "--dangerously-skip-permissions"])
+        .args([
+            "-p",
+            "--model",
+            "haiku",
+            "--no-session-persistence",
+            "--dangerously-skip-permissions",
+        ])
         .arg(&prompt)
         .env_remove("CLAUDECODE")
         .output()
@@ -192,13 +212,20 @@ async fn generate_summary(state: &Arc<AppState>, session_id: &str) {
 
     if !output.status.success() {
         let stderr = String::from_utf8_lossy(&output.stderr);
-        eprintln!("[summarizer] claude exited with error: {}", stderr.chars().take(200).collect::<String>());
+        eprintln!(
+            "[summarizer] claude exited with error: {}",
+            stderr.chars().take(200).collect::<String>()
+        );
         return;
     }
 
     let summary = String::from_utf8_lossy(&output.stdout).trim().to_string();
     if summary.is_empty() || summary.len() > 60 {
-        eprintln!("[summarizer] bad summary (len={}): {:?}", summary.len(), summary.chars().take(50).collect::<String>());
+        eprintln!(
+            "[summarizer] bad summary (len={}): {:?}",
+            summary.len(),
+            summary.chars().take(50).collect::<String>()
+        );
         return;
     }
 
@@ -269,7 +296,11 @@ pub fn spawn_initial_summary_scan(state: Arc<AppState>) {
             if msg_count < SUMMARY_THRESHOLD {
                 continue;
             }
-            eprintln!("[summarizer] boot scan: queuing {} (msgs={})", &session_id[..12.min(session_id.len())], msg_count);
+            eprintln!(
+                "[summarizer] boot scan: queuing {} (msgs={})",
+                &session_id[..12.min(session_id.len())],
+                msg_count
+            );
             let state = state.clone();
             let sid = session_id.clone();
             tokio::spawn(async move {
@@ -280,7 +311,10 @@ pub fn spawn_initial_summary_scan(state: Arc<AppState>) {
             tokio::time::sleep(std::time::Duration::from_millis(500)).await;
         }
         if queued > 0 {
-            eprintln!("[summarizer] boot scan: queued {} sessions for summary", queued);
+            eprintln!(
+                "[summarizer] boot scan: queued {} sessions for summary",
+                queued
+            );
         }
     });
 }
@@ -325,7 +359,11 @@ pub fn spawn_summarizer(state: Arc<AppState>) {
                 continue;
             }
 
-            eprintln!("[summarizer] generating summary for {} (msgs={})", &session_id[..12.min(session_id.len())], msg_count);
+            eprintln!(
+                "[summarizer] generating summary for {} (msgs={})",
+                &session_id[..12.min(session_id.len())],
+                msg_count
+            );
             state.summary_pending.insert(session_id.clone(), true);
             let state = state.clone();
             tokio::spawn(async move {

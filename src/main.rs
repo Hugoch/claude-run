@@ -53,11 +53,10 @@ async fn main() -> anyhow::Result<()> {
     let cli = Cli::parse();
 
     // Load or generate VAPID keys for push notifications
-    let (vapid_pem, vapid_pub) = push::load_or_generate_vapid(&cli.dir)
-        .unwrap_or_else(|e| {
-            eprintln!("[push] Failed to load/generate VAPID keys: {}", e);
-            (Vec::new(), String::new())
-        });
+    let (vapid_pem, vapid_pub) = push::load_or_generate_vapid(&cli.dir).unwrap_or_else(|e| {
+        eprintln!("[push] Failed to load/generate VAPID keys: {}", e);
+        (Vec::new(), String::new())
+    });
 
     let state = state::AppState::new(cli.dir.clone(), cli.dev, vapid_pem, vapid_pub);
 
@@ -91,11 +90,9 @@ async fn main() -> anyhow::Result<()> {
         };
         let certs = tls::ensure_certs(&hostname)?;
 
-        let tls_config = axum_server::tls_rustls::RustlsConfig::from_pem_file(
-            &certs.cert_path,
-            &certs.key_path,
-        )
-        .await?;
+        let tls_config =
+            axum_server::tls_rustls::RustlsConfig::from_pem_file(&certs.cert_path, &certs.key_path)
+                .await?;
 
         let tls_port = cli.port + 443;
         let url = format!("https://{}:{}/", hostname, tls_port);

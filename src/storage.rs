@@ -76,7 +76,9 @@ async fn get_session_slug(state: &AppState, session_id: &str) -> Option<String> 
         if let Ok(val) = serde_json::from_str::<serde_json::Value>(&line) {
             if let Some(slug) = val.get("slug").and_then(|s| s.as_str()) {
                 let slug = slug.to_string();
-                state.slug_cache.insert(session_id.to_string(), Some(slug.clone()));
+                state
+                    .slug_cache
+                    .insert(session_id.to_string(), Some(slug.clone()));
                 return Some(slug);
             }
         }
@@ -117,9 +119,12 @@ async fn get_session_git_branch(state: &AppState, session_id: &str) -> Option<St
         }
         if let Ok(val) = serde_json::from_str::<serde_json::Value>(line) {
             if let Some(branch) = val.get("gitBranch").and_then(|s| s.as_str()) {
-                if !branch.is_empty() && branch != "HEAD" && branch != "main" && branch != "master" {
+                if !branch.is_empty() && branch != "HEAD" && branch != "main" && branch != "master"
+                {
                     let branch = branch.to_string();
-                    state.git_branch_cache.insert(session_id.to_string(), Some(branch.clone()));
+                    state
+                        .git_branch_cache
+                        .insert(session_id.to_string(), Some(branch.clone()));
                     return Some(branch);
                 }
             }
@@ -245,11 +250,20 @@ pub async fn load_pane_map(state: &AppState) {
             let raw = raw.trim().to_string();
             if !raw.is_empty() {
                 let (pane_id, zellij_session) = if let Some((p, z)) = raw.split_once(':') {
-                    (p.to_string(), if z.is_empty() { None } else { Some(z.to_string()) })
+                    (
+                        p.to_string(),
+                        if z.is_empty() {
+                            None
+                        } else {
+                            Some(z.to_string())
+                        },
+                    )
                 } else {
                     (raw, None)
                 };
-                state.session_panes.insert(session_id, (pane_id, zellij_session, false));
+                state
+                    .session_panes
+                    .insert(session_id, (pane_id, zellij_session, false));
             }
         }
     }
@@ -302,9 +316,7 @@ async fn find_session_by_timestamp(
                 let diff = (mtime_ms - timestamp).abs();
                 if diff < closest_diff {
                     closest_diff = diff;
-                    closest_file = path
-                        .file_stem()
-                        .map(|s| s.to_string_lossy().to_string());
+                    closest_file = path.file_stem().map(|s| s.to_string_lossy().to_string());
                 }
             }
         }
@@ -383,13 +395,17 @@ pub async fn count_session_messages(state: &AppState, session_id: &str) -> usize
         })
         .count();
 
-    state.message_count_cache.insert(session_id.to_string(), (count, file_size));
+    state
+        .message_count_cache
+        .insert(session_id.to_string(), (count, file_size));
     count
 }
 
 pub async fn get_sessions(state: &AppState) -> Vec<Session> {
     // Check dirty flag — always reload if history.jsonl changed
-    let is_dirty = state.history_dirty.swap(false, std::sync::atomic::Ordering::AcqRel);
+    let is_dirty = state
+        .history_dirty
+        .swap(false, std::sync::atomic::Ordering::AcqRel);
     let entries = if is_dirty {
         // Invalidate and reload
         {
@@ -453,7 +469,10 @@ pub async fn get_sessions(state: &AppState) -> Vec<Session> {
         let summary = state.summary_cache.get(&session_id).map(|v| v.0.clone());
         let tags = crate::tags::get_tags(state, &session_id);
 
-        let display = if entry.display.contains("** Session started from claude-run **") {
+        let display = if entry
+            .display
+            .contains("** Session started from claude-run **")
+        {
             "New session".to_string()
         } else {
             entry.display.clone()
@@ -470,8 +489,13 @@ pub async fn get_sessions(state: &AppState) -> Vec<Session> {
             status: state.get_session_status(&session_id),
             pane_id: state.get_session_pane(&session_id).map(|(id, _, _)| id),
             pane_verified: state.get_session_pane(&session_id).map(|(_, _, v)| v),
-            zellij_session: state.get_session_pane(&session_id).and_then(|(_, zs, _)| zs),
-            permission_message: state.permission_messages.get(&session_id).map(|v| v.clone()),
+            zellij_session: state
+                .get_session_pane(&session_id)
+                .and_then(|(_, zs, _)| zs),
+            permission_message: state
+                .permission_messages
+                .get(&session_id)
+                .map(|v| v.clone()),
             question_data: state.question_data.get(&session_id).map(|v| v.clone()),
             slug,
             git_branch,
@@ -484,7 +508,10 @@ pub async fn get_sessions(state: &AppState) -> Vec<Session> {
     // Include orphan sessions (files in index but not in history.jsonl)
     for entry in state.file_index.iter() {
         let session_id = entry.key().clone();
-        if session_id.starts_with("agent-") || seen_ids.contains(&session_id) || state.hidden_sessions.contains_key(&session_id) {
+        if session_id.starts_with("agent-")
+            || seen_ids.contains(&session_id)
+            || state.hidden_sessions.contains_key(&session_id)
+        {
             continue;
         }
         seen_ids.insert(session_id.clone());
@@ -547,8 +574,13 @@ pub async fn get_sessions(state: &AppState) -> Vec<Session> {
             status: state.get_session_status(&session_id),
             pane_id: state.get_session_pane(&session_id).map(|(id, _, _)| id),
             pane_verified: state.get_session_pane(&session_id).map(|(_, _, v)| v),
-            zellij_session: state.get_session_pane(&session_id).and_then(|(_, zs, _)| zs),
-            permission_message: state.permission_messages.get(&session_id).map(|v| v.clone()),
+            zellij_session: state
+                .get_session_pane(&session_id)
+                .and_then(|(_, zs, _)| zs),
+            permission_message: state
+                .permission_messages
+                .get(&session_id)
+                .map(|v| v.clone()),
             question_data: state.question_data.get(&session_id).map(|v| v.clone()),
             slug,
             git_branch,
@@ -558,7 +590,11 @@ pub async fn get_sessions(state: &AppState) -> Vec<Session> {
         });
     }
 
-    sessions.sort_by(|a, b| b.last_activity.partial_cmp(&a.last_activity).unwrap_or(std::cmp::Ordering::Equal));
+    sessions.sort_by(|a, b| {
+        b.last_activity
+            .partial_cmp(&a.last_activity)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     sessions
 }
 
@@ -731,7 +767,10 @@ pub async fn get_conversation_stream(
 
         match serde_json::from_str::<ConversationMessage>(&line) {
             Ok(msg) => {
-                if msg.msg_type == "user" || msg.msg_type == "assistant" || msg.msg_type == "summary" {
+                if msg.msg_type == "user"
+                    || msg.msg_type == "assistant"
+                    || msg.msg_type == "summary"
+                {
                     messages.push(msg);
                 } else if msg.msg_type == "queue-operation" {
                     if let Some(m) = queue_op_to_user_message(&msg) {
@@ -806,7 +845,10 @@ pub async fn get_conversation_tail(
         if !line.is_empty() {
             if let Ok(line_str) = std::str::from_utf8(line) {
                 if let Ok(msg) = serde_json::from_str::<ConversationMessage>(line_str) {
-                    if msg.msg_type == "user" || msg.msg_type == "assistant" || msg.msg_type == "summary" {
+                    if msg.msg_type == "user"
+                        || msg.msg_type == "assistant"
+                        || msg.msg_type == "summary"
+                    {
                         entries.push((offset, line_end, msg));
                     } else if msg.msg_type == "queue-operation" {
                         if let Some(m) = queue_op_to_user_message(&msg) {
@@ -834,11 +876,7 @@ pub async fn get_conversation_tail(
     let skip_count = total - take_count;
     let has_more = skip_count > 0;
 
-    let start_offset = if has_more {
-        entries[skip_count].0
-    } else {
-        0
-    };
+    let start_offset = if has_more { entries[skip_count].0 } else { 0 };
 
     let messages: Vec<ConversationMessage> = entries
         .into_iter()
@@ -913,7 +951,10 @@ pub async fn get_conversation_range(
         if !line.is_empty() {
             if let Ok(line_str) = std::str::from_utf8(line) {
                 if let Ok(msg) = serde_json::from_str::<ConversationMessage>(line_str) {
-                    if msg.msg_type == "user" || msg.msg_type == "assistant" || msg.msg_type == "summary" {
+                    if msg.msg_type == "user"
+                        || msg.msg_type == "assistant"
+                        || msg.msg_type == "summary"
+                    {
                         entries.push((offset, line_end, msg));
                     } else if msg.msg_type == "queue-operation" {
                         if let Some(m) = queue_op_to_user_message(&msg) {
@@ -941,11 +982,7 @@ pub async fn get_conversation_range(
     let skip_count = total - take_count;
     let has_more = skip_count > 0;
 
-    let start_offset = if has_more {
-        entries[skip_count].0
-    } else {
-        0
-    };
+    let start_offset = if has_more { entries[skip_count].0 } else { 0 };
 
     let messages: Vec<ConversationMessage> = entries
         .into_iter()
@@ -1238,11 +1275,7 @@ fn create_snippet(text: &str, query: &str, context_length: usize) -> String {
     snippet
 }
 
-async fn search_session_file(
-    file_path: &str,
-    _session_id: &str,
-    query: &str,
-) -> Vec<SearchMatch> {
+async fn search_session_file(file_path: &str, _session_id: &str, query: &str) -> Vec<SearchMatch> {
     let content = match fs::read_to_string(file_path).await {
         Ok(c) => c,
         Err(_) => return Vec::new(),
@@ -1325,7 +1358,10 @@ pub async fn search_conversations(state: &Arc<AppState>, query: &str) -> Vec<Sea
         }
     }
 
-    results.sort_by(|a, b| b.timestamp.partial_cmp(&a.timestamp).unwrap_or(std::cmp::Ordering::Equal));
+    results.sort_by(|a, b| {
+        b.timestamp
+            .partial_cmp(&a.timestamp)
+            .unwrap_or(std::cmp::Ordering::Equal)
+    });
     results
 }
-
