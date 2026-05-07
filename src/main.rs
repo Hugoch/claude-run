@@ -5,6 +5,7 @@ mod server;
 mod state;
 mod storage;
 mod summarizer;
+mod tags;
 mod tls;
 mod tts;
 mod watcher;
@@ -70,6 +71,9 @@ async fn main() -> anyhow::Result<()> {
 
     // Start file watcher
     watcher::start_watcher(state.clone()).await?;
+
+    // Load persisted tags
+    tags::load_tags(&state).await;
 
     // Load persisted summaries and start background summarizer
     summarizer::load_summaries(&state).await;

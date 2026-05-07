@@ -34,6 +34,8 @@ pub struct AppState {
     pub summary_cache: DashMap<String, (String, usize)>,
     // sessionId → true while generating (avoid duplicate spawns)
     pub summary_pending: DashMap<String, bool>,
+    // sessionId → user-assigned tags (lowercase, deduped)
+    pub tags_cache: DashMap<String, Vec<String>>,
     // Sessions hidden from UI (deleted by user)
     pub hidden_sessions: DashMap<String, ()>,
     // Parsed history.jsonl cache
@@ -81,6 +83,7 @@ impl AppState {
             message_count_cache: DashMap::new(),
             summary_cache: DashMap::new(),
             summary_pending: DashMap::new(),
+            tags_cache: DashMap::new(),
             hidden_sessions: DashMap::new(),
             last_mobile_ping: AtomicU64::new(0),
             last_desktop_ping: AtomicU64::new(0),

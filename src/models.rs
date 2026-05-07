@@ -50,6 +50,8 @@ pub struct Session {
     pub summary: Option<String>,
     #[serde(skip_serializing_if = "Option::is_none")]
     pub file_size: Option<u64>,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub tags: Option<Vec<String>>,
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

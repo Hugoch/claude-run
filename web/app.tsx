@@ -657,6 +657,26 @@ function App() {
     [selectedSession, deleting],
   );
 
+  const handleUpdateSessionTags = useCallback(async (sessionId: string, tags: string[]) => {
+    try {
+      const res = await fetch(`/api/sessions/${sessionId}/tags`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ tags }),
+      });
+      if (!res.ok) return;
+      const data = await res.json();
+      const newTags: string[] = data.tags ?? [];
+      setSessions((prev) =>
+        prev.map((s) =>
+          s.id === sessionId ? { ...s, tags: newTags.length ? newTags : undefined } : s,
+        ),
+      );
+    } catch (err) {
+      console.error("Failed to update session tags:", err);
+    }
+  }, []);
+
   const handleResurrectSession = useCallback((sessionId: string, project: string, name?: string) => {
     setResurrectData({ id: sessionId, project, name });
     setResurrectSkip(true);
@@ -783,6 +803,7 @@ function App() {
             onSelectSession={handleSelectSession}
             onDeleteSession={handleDeleteSession}
             onResurrectSession={handleResurrectSession}
+            onUpdateTags={handleUpdateSessionTags}
             loading={loading}
             selectedProject={selectedProject}
           />

@@ -126,6 +126,8 @@ pub fn create_router(state: Arc<AppState>) -> Router {
     let api = Router::new()
         .route("/api/sessions", get(get_sessions))
         .route("/api/sessions/:id", delete(delete_session))
+        .route("/api/sessions/:id/tags", post(set_session_tags))
+        .route("/api/tags", get(get_all_tags))
         .route("/api/sessions/:id/status", post(set_status))
         .route("/api/sessions/:id/send", post(send_message))
         .route("/api/sessions/:id/keys", post(send_keys))
@@ -241,6 +243,25 @@ async fn delete_session(
     } else {
         Json(serde_json::json!({ "error": "Session not found" }))
     }
+}
+
+#[derive(Deserialize)]
+struct SetTagsRequest {
+    tags: Vec<String>,
+}
+
+async fn set_session_tags(
+    State(state): State<Arc<AppState>>,
+    Path(id): Path<String>,
+    Json(body): Json<SetTagsRequest>,
+) -> impl IntoResponse {
+    let tags = crate::tags::set_tags(&state, &id, body.tags).await;
+    Json(serde_json::json!({ "tags": tags }))
+}
+
+async fn get_all_tags(State(state): State<Arc<AppState>>) -> impl IntoResponse {
+    let tags = crate::tags::all_tags(&state);
+    Json(serde_json::json!({ "tags": tags }))
 }
 
 async fn set_status(
