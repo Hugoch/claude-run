@@ -743,6 +743,18 @@ pub async fn rename_zellij_tab(
         None => return,
     };
 
+    // Only rename if this pane is the sole selectable pane in its tab
+    let tab_pane_count = panes
+        .iter()
+        .filter(|p| {
+            p.get("tab_id").and_then(|v| v.as_u64()) == Some(tab_id)
+                && p.get("is_selectable").and_then(|v| v.as_bool()).unwrap_or(false)
+        })
+        .count();
+    if tab_pane_count > 1 {
+        return;
+    }
+
     let truncated: String = name.chars().take(60).collect();
     let _ = zellij_cmd(zellij_session)
         .args(["action", "rename-tab-by-id", &tab_id.to_string(), &truncated])
