@@ -446,6 +446,11 @@ function App() {
   const [showLaunchModal, setShowLaunchModal] = useState(false);
   const [launchProject, setLaunchProject] = useState("");
   const [launchPrompt, setLaunchPrompt] = useState("");
+  const [launchModel, setLaunchModel] = useState("");
+  const [availableModels, setAvailableModels] = useState<{ id: string; display_name: string }[]>([]);
+  const [modelsLoaded, setModelsLoaded] = useState(false);
+  const [targetTabId, setTargetTabId] = useState<string>("");
+  const [zellijTabs, setZellijTabs] = useState<{ tab_id: number; name: string; position: number }[]>([]);
   const [skipPermissions, setSkipPermissions] = useState(true);
   const [zellijSession, setZellijSession] = useState("");
   const [pendingUrls, setPendingUrls] = useState<string[]>([]);
@@ -480,6 +485,34 @@ function App() {
     document.addEventListener("visibilitychange", handler);
     return () => document.removeEventListener("visibilitychange", handler);
   }, []);
+  useEffect(() => {
+    if (showLaunchModal && !modelsLoaded) {
+      fetch("/api/models")
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.models) {
+            const sorted = (d.models as { id: string; display_name: string }[])
+              .filter((m) => m.id.startsWith("claude-"))
+              .sort((a, b) => a.display_name.localeCompare(b.display_name));
+            setAvailableModels(sorted);
+          }
+          setModelsLoaded(true);
+        })
+        .catch(() => setModelsLoaded(true));
+    }
+  }, [showLaunchModal, modelsLoaded]);
+
+  useEffect(() => {
+    if (showLaunchModal && zellijSession) {
+      fetch(`/api/zellij/tabs?session=${encodeURIComponent(zellijSession)}`)
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.tabs) setZellijTabs(d.tabs);
+        })
+        .catch(() => {});
+    }
+  }, [showLaunchModal, zellijSession]);
+
   const [resurrectData, setResurrectData] = useState<{ id: string; project: string; name?: string } | null>(null);
   const [resurrectSkip, setResurrectSkip] = useState(true);
   const [resurrecting, setResurrecting] = useState(false);
@@ -680,10 +713,18 @@ function App() {
   const handleResurrectSession = useCallback((sessionId: string, project: string, name?: string) => {
     setResurrectData({ id: sessionId, project, name });
     setResurrectSkip(true);
+    setTargetTabId("");
     fetch("/api/zellij/sessions").then(r => r.json()).then(d => {
       const sessions = d.sessions || [];
       setZellijSessions(sessions);
-      if (!zellijSession && sessions.length > 0) setZellijSession(sessions[0]);
+      const session = zellijSession || (sessions.length > 0 ? sessions[0] : "");
+      if (!zellijSession && session) setZellijSession(session);
+      if (session) {
+        fetch(`/api/zellij/tabs?session=${encodeURIComponent(session)}`)
+          .then(r => r.json())
+          .then(td => { if (td.tabs) setZellijTabs(td.tabs); })
+          .catch(() => {});
+      }
     }).catch(() => {});
   }, [zellijSession]);
 
@@ -696,6 +737,7 @@ function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({
           project: resurrectData.project,
+          targetTabId: targetTabId ? Number(targetTabId) : undefined,
           dangerouslySkipPermissions: resurrectSkip || undefined,
           zellijSession: zellijSession || newZellijName.trim() || undefined,
         }),
@@ -720,6 +762,8 @@ function App() {
         body: JSON.stringify({
           project: launchProject || undefined,
           prompt: launchPrompt || undefined,
+          model: launchModel || undefined,
+          targetTabId: targetTabId ? Number(targetTabId) : undefined,
           dangerouslySkipPermissions: skipPermissions || undefined,
           zellijSession: zellijSession || newZellijName.trim() || undefined,
         }),
@@ -729,13 +773,15 @@ function App() {
         setShowLaunchModal(false);
         setLaunchProject("");
         setLaunchPrompt("");
+        setLaunchModel("");
+        setTargetTabId("");
       }
     } catch (err) {
       console.error("Failed to launch agent:", err);
     } finally {
       setLaunching(false);
     }
-  }, [launchProject, zellijSession, skipPermissions, launchPrompt, newZellijName]);
+  }, [launchProject, zellijSession, skipPermissions, launchPrompt, launchModel, targetTabId, newZellijName]);
 
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
@@ -948,6 +994,22 @@ function App() {
                   </div>
                 )}
               </div>
+              {zellijTabs.length > 0 && (
+                <div>
+                  <label htmlFor="resurrect-tab" className="block text-xs text-muted-foreground mb-1.5">Target tab</label>
+                  <select
+                    id="resurrect-tab"
+                    value={targetTabId}
+                    onChange={(e) => setTargetTabId(e.target.value)}
+                    className="w-full bg-muted border border-border rounded px-3 py-2 text-sm text-foreground focus:outline-none focus:border-ring"
+                  >
+                    <option value="">New tab</option>
+                    {zellijTabs.map((t) => (
+                      <option key={t.tab_id} value={t.tab_id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
@@ -996,6 +1058,20 @@ function App() {
                 </select>
               </div>
               <div>
+                <label htmlFor="launch-model" className="block text-xs text-muted-foreground mb-1.5">Model</label>
+                <select
+                  id="launch-model"
+                  value={launchModel}
+                  onChange={(e) => setLaunchModel(e.target.value)}
+                  className="w-full bg-muted border border-border rounded px-3 py-2 text-sm text-foreground focus:outline-none focus:border-ring"
+                >
+                  <option value="">Default</option>
+                  {availableModels.map((m) => (
+                    <option key={m.id} value={m.id}>{m.display_name}</option>
+                  ))}
+                </select>
+              </div>
+              <div>
                 <label htmlFor="launch-prompt" className="block text-xs text-muted-foreground mb-1.5">Initial prompt (optional)</label>
                 <textarea
                   id="launch-prompt"
@@ -1039,6 +1115,22 @@ function App() {
                   </div>
                 )}
               </div>
+              {zellijTabs.length > 0 && (
+                <div>
+                  <label htmlFor="launch-tab" className="block text-xs text-muted-foreground mb-1.5">Target tab</label>
+                  <select
+                    id="launch-tab"
+                    value={targetTabId}
+                    onChange={(e) => setTargetTabId(e.target.value)}
+                    className="w-full bg-muted border border-border rounded px-3 py-2 text-sm text-foreground focus:outline-none focus:border-ring"
+                  >
+                    <option value="">New tab</option>
+                    {zellijTabs.map((t) => (
+                      <option key={t.tab_id} value={t.tab_id}>{t.name}</option>
+                    ))}
+                  </select>
+                </div>
+              )}
               <label className="flex items-center gap-2 cursor-pointer">
                 <input
                   type="checkbox"
