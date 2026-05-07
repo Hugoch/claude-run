@@ -245,6 +245,7 @@ pub struct UsageResponse {
 pub struct LaunchRequest {
     pub project: Option<String>,
     pub prompt: Option<String>,
+    pub model: Option<String>,
     pub dangerously_skip_permissions: Option<bool>,
     pub zellij_session: Option<String>,
 }

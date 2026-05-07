@@ -148,6 +148,7 @@ pub fn create_router(state: Arc<AppState>) -> Router {
         )
         .route("/api/usage", get(get_usage))
         .route("/api/launch", post(launch_agent))
+        .route("/api/models", get(get_models))
         .route("/api/sessions/:id/resurrect", post(resurrect_session))
         .route("/api/sessions/:id/kill", post(kill_session))
         .route(
@@ -693,6 +694,91 @@ async fn open_url(
     StatusCode::OK
 }
 
+fn get_anthropic_api_key() -> Option<String> {
+    // Try macOS keychain first (where Claude Code stores OAuth credentials)
+    if let Ok(output) = std::process::Command::new("security")
+        .args(["find-generic-password", "-s", "Claude Code-credentials", "-w"])
+        .output()
+    {
+        if output.status.success() {
+            if let Ok(json_str) = String::from_utf8(output.stdout) {
+                if let Ok(json) = serde_json::from_str::<serde_json::Value>(json_str.trim()) {
+                    if let Some(token) = json
+                        .get("claudeAiOauth")
+                        .and_then(|o| o.get("accessToken"))
+                        .and_then(|t| t.as_str())
+                    {
+                        return Some(token.to_string());
+                    }
+                }
+            }
+        }
+    }
+    // Fallback to env var
+    std::env::var("ANTHROPIC_API_KEY").ok()
+}
+
+async fn get_models() -> impl IntoResponse {
+    let api_key = match get_anthropic_api_key() {
+        Some(key) => key,
+        None => {
+            return Json(
+                serde_json::json!({ "error": "No API key found in keychain or ANTHROPIC_API_KEY" }),
+            )
+        }
+    };
+
+    let client = reqwest::Client::new();
+    let mut models = Vec::new();
+    let mut after_id: Option<String> = None;
+
+    loop {
+        let mut request = client
+            .get("https://api.anthropic.com/v1/models")
+            .header("x-api-key", &api_key)
+            .header("anthropic-version", "2023-06-01")
+            .query(&[("limit", "100")]);
+
+        if let Some(ref cursor) = after_id {
+            request = request.query(&[("after_id", cursor.as_str())]);
+        }
+
+        match request.send().await {
+            Ok(resp) if resp.status().is_success() => match resp.json::<serde_json::Value>().await
+            {
+                Ok(body) => {
+                    if let Some(data) = body.get("data").and_then(|d| d.as_array()) {
+                        models.extend(data.clone());
+                    }
+                    if body.get("has_more").and_then(|h| h.as_bool()) == Some(true) {
+                        after_id = body
+                            .get("last_id")
+                            .and_then(|id| id.as_str())
+                            .map(|s| s.to_string());
+                    } else {
+                        break;
+                    }
+                }
+                Err(err) => {
+                    return Json(serde_json::json!({ "error": format!("Failed to parse response: {}", err) }))
+                }
+            },
+            Ok(resp) => {
+                let status = resp.status().as_u16();
+                let text = resp.text().await.unwrap_or_default();
+                return Json(
+                    serde_json::json!({ "error": format!("API returned {}: {}", status, text) }),
+                );
+            }
+            Err(err) => {
+                return Json(serde_json::json!({ "error": format!("Request failed: {}", err) }))
+            }
+        }
+    }
+
+    Json(serde_json::json!({ "models": models }))
+}
+
 async fn launch_agent(Json(body): Json<LaunchRequest>) -> impl IntoResponse {
     eprintln!(
         "[launch] project={:?} zellij_session={:?} skip={:?}",
@@ -726,13 +812,19 @@ async fn launch_agent(Json(body): Json<LaunchRequest>) -> impl IntoResponse {
         .unwrap_or("** Session started from claude-run ** don't answer to this message");
     // Shell-escape the prompt by replacing single quotes
     let escaped_prompt = prompt.replace('\'', "'\\''");
+    let model_flag = body
+        .model
+        .as_deref()
+        .filter(|m| !m.is_empty())
+        .map(|m| format!(" --model {}", m))
+        .unwrap_or_default();
     let cmd = if body.dangerously_skip_permissions.unwrap_or(false) {
         format!(
-            "$SHELL -c 'claude --dangerously-skip-permissions \"{}\"'",
-            escaped_prompt
+            "$SHELL -c 'claude{} --dangerously-skip-permissions \"{}\"'",
+            model_flag, escaped_prompt
         )
     } else {
-        format!("$SHELL -c 'claude \"{}\"'", escaped_prompt)
+        format!("$SHELL -c 'claude{} \"{}\"'", model_flag, escaped_prompt)
     };
 
     args.extend(["--", "sh", "-c"]);

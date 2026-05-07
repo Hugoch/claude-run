@@ -446,6 +446,9 @@ function App() {
   const [showLaunchModal, setShowLaunchModal] = useState(false);
   const [launchProject, setLaunchProject] = useState("");
   const [launchPrompt, setLaunchPrompt] = useState("");
+  const [launchModel, setLaunchModel] = useState("");
+  const [availableModels, setAvailableModels] = useState<{ id: string; display_name: string }[]>([]);
+  const [modelsLoaded, setModelsLoaded] = useState(false);
   const [skipPermissions, setSkipPermissions] = useState(true);
   const [zellijSession, setZellijSession] = useState("");
   const [pendingUrls, setPendingUrls] = useState<string[]>([]);
@@ -480,6 +483,23 @@ function App() {
     document.addEventListener("visibilitychange", handler);
     return () => document.removeEventListener("visibilitychange", handler);
   }, []);
+  useEffect(() => {
+    if (showLaunchModal && !modelsLoaded) {
+      fetch("/api/models")
+        .then((r) => r.json())
+        .then((d) => {
+          if (d.models) {
+            const sorted = (d.models as { id: string; display_name: string }[])
+              .filter((m) => m.id.startsWith("claude-"))
+              .sort((a, b) => a.display_name.localeCompare(b.display_name));
+            setAvailableModels(sorted);
+          }
+          setModelsLoaded(true);
+        })
+        .catch(() => setModelsLoaded(true));
+    }
+  }, [showLaunchModal, modelsLoaded]);
+
   const [resurrectData, setResurrectData] = useState<{ id: string; project: string; name?: string } | null>(null);
   const [resurrectSkip, setResurrectSkip] = useState(true);
   const [resurrecting, setResurrecting] = useState(false);
@@ -700,6 +720,7 @@ function App() {
         body: JSON.stringify({
           project: launchProject || undefined,
           prompt: launchPrompt || undefined,
+          model: launchModel || undefined,
           dangerouslySkipPermissions: skipPermissions || undefined,
           zellijSession: zellijSession || newZellijName.trim() || undefined,
         }),
@@ -709,13 +730,14 @@ function App() {
         setShowLaunchModal(false);
         setLaunchProject("");
         setLaunchPrompt("");
+        setLaunchModel("");
       }
     } catch (err) {
       console.error("Failed to launch agent:", err);
     } finally {
       setLaunching(false);
     }
-  }, [launchProject, zellijSession, skipPermissions, launchPrompt, newZellijName]);
+  }, [launchProject, zellijSession, skipPermissions, launchPrompt, launchModel, newZellijName]);
 
   return (
     <div className="flex flex-col h-full bg-background text-foreground">
@@ -972,6 +994,20 @@ function App() {
                       <option key={project} value={project}>{name}</option>
                     );
                   })}
+                </select>
+              </div>
+              <div>
+                <label htmlFor="launch-model" className="block text-xs text-muted-foreground mb-1.5">Model</label>
+                <select
+                  id="launch-model"
+                  value={launchModel}
+                  onChange={(e) => setLaunchModel(e.target.value)}
+                  className="w-full bg-muted border border-border rounded px-3 py-2 text-sm text-foreground focus:outline-none focus:border-ring"
+                >
+                  <option value="">Default</option>
+                  {availableModels.map((m) => (
+                    <option key={m.id} value={m.id}>{m.display_name}</option>
+                  ))}
                 </select>
               </div>
               <div>
