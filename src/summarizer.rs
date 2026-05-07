@@ -3,10 +3,17 @@ use std::sync::Arc;
 use tokio::fs;
 use tokio::process::Command;
 
+use crate::server::rename_zellij_tab;
 use crate::state::AppState;
 use crate::storage::{count_session_messages, get_conversation};
 
 const SUMMARY_THRESHOLD: usize = 3;
+
+async fn update_tab_name(state: &AppState, session_id: &str, summary: &str) {
+    if let Some((pane_id, zs, _)) = state.get_session_pane(session_id) {
+        rename_zellij_tab(&pane_id, zs.as_deref(), summary).await;
+    }
+}
 
 /// Directory for per-session summary files
 fn summary_dir(state: &AppState) -> String {
@@ -78,6 +85,7 @@ async fn generate_summary(state: &Arc<AppState>, session_id: &str) {
             .summary_cache
             .insert(session_id.to_string(), (truncated.clone(), msg_count));
         save_summary(state, session_id, &truncated, msg_count).await;
+        update_tab_name(state, session_id, &truncated).await;
         return;
     }
 
@@ -175,6 +183,7 @@ async fn generate_summary(state: &Arc<AppState>, session_id: &str) {
         .summary_cache
         .insert(session_id.to_string(), (summary.clone(), msg_count));
     save_summary(state, session_id, &summary, msg_count).await;
+    update_tab_name(state, session_id, &summary).await;
 }
 
 /// Extract a quick summary from the first user message (truncated, no LLM)
@@ -212,6 +221,7 @@ async fn set_early_summary(state: &Arc<AppState>, session_id: &str) {
         .summary_cache
         .insert(session_id.to_string(), (summary.clone(), msg_count));
     save_summary(state, session_id, &summary, msg_count).await;
+    update_tab_name(state, session_id, &summary).await;
     eprintln!(
         "[summarizer] early summary for {}: {:?}",
         &session_id[..12.min(session_id.len())],

@@ -394,7 +394,21 @@ async fn set_status(
         let pane_map_path = format!("{}/pane-map/{}", state.claude_dir, id);
         let _ = tokio::fs::remove_file(&pane_map_path).await;
     }
-    state.set_session_status(&id, status, body.pane_id, body.zellij_session);
+    state.set_session_status(&id, status.clone(), body.pane_id, body.zellij_session);
+
+    if status.is_some() {
+        if let Some((pane_id, zs, _)) = state.get_session_pane(&id) {
+            let display = state
+                .summary_cache
+                .get(&id)
+                .map(|entry| entry.value().0.clone());
+            if let Some(name) = display {
+                tokio::spawn(async move {
+                    rename_zellij_tab(&pane_id, zs.as_deref(), &name).await;
+                });
+            }
+        }
+    }
 
     Json(serde_json::json!({ "ok": true }))
 }
@@ -692,6 +706,47 @@ async fn open_url(
 
     let _ = sse_ok;
     StatusCode::OK
+}
+
+pub async fn rename_zellij_tab(
+    pane_id: &str,
+    zellij_session: Option<&str>,
+    name: &str,
+) {
+    let panes_output = match zellij_cmd(zellij_session)
+        .args(["action", "list-panes", "--json", "--tab"])
+        .output()
+        .await
+    {
+        Ok(o) if o.status.success() => o,
+        _ => return,
+    };
+
+    let panes: Vec<serde_json::Value> =
+        match serde_json::from_slice(&panes_output.stdout) {
+            Ok(v) => v,
+            Err(_) => return,
+        };
+
+    let pane_id_num: u64 = match pane_id.parse() {
+        Ok(n) => n,
+        Err(_) => return,
+    };
+
+    let tab_id = match panes
+        .iter()
+        .find(|p| p.get("id").and_then(|v| v.as_u64()) == Some(pane_id_num))
+        .and_then(|p| p.get("tab_id").and_then(|v| v.as_u64()))
+    {
+        Some(id) => id,
+        None => return,
+    };
+
+    let truncated: String = name.chars().take(60).collect();
+    let _ = zellij_cmd(zellij_session)
+        .args(["action", "rename-tab-by-id", &tab_id.to_string(), &truncated])
+        .output()
+        .await;
 }
 
 fn get_anthropic_api_key() -> Option<String> {
