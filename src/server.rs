@@ -155,6 +155,7 @@ pub fn create_router(state: Arc<AppState>) -> Router {
             "/api/zellij/sessions",
             get(get_zellij_sessions).post(create_zellij_session),
         )
+        .route("/api/zellij/tabs", get(get_zellij_tabs))
         .route("/api/tail", get(tail_file))
         .route("/api/tasks/:id/alive", get(check_task_alive))
         .route("/api/ping", get(ping))
@@ -834,10 +835,73 @@ async fn get_models() -> impl IntoResponse {
     Json(serde_json::json!({ "models": models }))
 }
 
+async fn run_in_zellij(
+    zellij_session: Option<&str>,
+    target_tab_id: Option<u64>,
+    cwd: Option<&str>,
+    shell_cmd: &str,
+    label: &str,
+) -> Json<serde_json::Value> {
+    if let Some(tab_id) = target_tab_id {
+        // Focus the target tab, then create a pane inside it
+        let _ = zellij_cmd(zellij_session)
+            .args(["action", "go-to-tab-by-id", &tab_id.to_string()])
+            .output()
+            .await;
+
+        let mut args = vec!["action".to_string(), "new-pane".to_string()];
+        if let Some(dir) = cwd {
+            args.extend(["--cwd".to_string(), dir.to_string()]);
+        }
+        args.extend(["--".to_string(), "sh".to_string(), "-c".to_string(), shell_cmd.to_string()]);
+
+        eprintln!("[{}] running pane in tab {}: zellij {:?}", label, tab_id, args);
+        match zellij_cmd(zellij_session).args(&args).output().await {
+            Ok(output) if output.status.success() => {
+                eprintln!("[{}] success", label);
+                Json(serde_json::json!({ "ok": true }))
+            }
+            Ok(output) => {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                eprintln!("[{}] zellij failed: {}", label, stderr);
+                Json(serde_json::json!({ "error": stderr }))
+            }
+            Err(err) => {
+                eprintln!("[{}] spawn error: {}", label, err);
+                Json(serde_json::json!({ "error": format!("{}", err) }))
+            }
+        }
+    } else {
+        // Create a new tab
+        let mut args = vec!["action".to_string(), "new-tab".to_string()];
+        if let Some(dir) = cwd {
+            args.extend(["--cwd".to_string(), dir.to_string()]);
+        }
+        args.extend(["--".to_string(), "sh".to_string(), "-c".to_string(), shell_cmd.to_string()]);
+
+        eprintln!("[{}] running new tab: zellij {:?}", label, args);
+        match zellij_cmd(zellij_session).args(&args).output().await {
+            Ok(output) if output.status.success() => {
+                eprintln!("[{}] success", label);
+                Json(serde_json::json!({ "ok": true }))
+            }
+            Ok(output) => {
+                let stderr = String::from_utf8_lossy(&output.stderr);
+                eprintln!("[{}] zellij failed: {}", label, stderr);
+                Json(serde_json::json!({ "error": stderr }))
+            }
+            Err(err) => {
+                eprintln!("[{}] spawn error: {}", label, err);
+                Json(serde_json::json!({ "error": format!("{}", err) }))
+            }
+        }
+    }
+}
+
 async fn launch_agent(Json(body): Json<LaunchRequest>) -> impl IntoResponse {
     eprintln!(
-        "[launch] project={:?} zellij_session={:?} skip={:?}",
-        body.project, body.zellij_session, body.dangerously_skip_permissions
+        "[launch] project={:?} zellij_session={:?} skip={:?} target_tab={:?}",
+        body.project, body.zellij_session, body.dangerously_skip_permissions, body.target_tab_id
     );
 
     // Ensure the Zellij session exists (create if needed)
@@ -855,17 +919,10 @@ async fn launch_agent(Json(body): Json<LaunchRequest>) -> impl IntoResponse {
         eprintln!("[launch] WARNING: no zellij_session provided");
     }
 
-    let mut args = vec!["action", "new-tab"];
-
-    if let Some(ref project) = body.project {
-        args.extend(["--cwd", project]);
-    }
-
     let prompt = body
         .prompt
         .as_deref()
         .unwrap_or("** Session started from claude-run ** don't answer to this message");
-    // Shell-escape the prompt by replacing single quotes
     let escaped_prompt = prompt.replace('\'', "'\\''");
     let model_flag = body
         .model
@@ -882,39 +939,14 @@ async fn launch_agent(Json(body): Json<LaunchRequest>) -> impl IntoResponse {
         format!("$SHELL -c 'claude{} \"{}\"'", model_flag, escaped_prompt)
     };
 
-    args.extend(["--", "sh", "-c"]);
-    let args_owned: Vec<String> = args.iter().map(|s| s.to_string()).collect();
-    let mut final_args = args_owned;
-    final_args.push(cmd.clone());
-
-    eprintln!(
-        "[launch] running: zellij {:?} {:?}",
-        body.zellij_session, final_args
-    );
-
-    match zellij_cmd(body.zellij_session.as_deref())
-        .args(&final_args)
-        .output()
-        .await
-    {
-        Ok(output) if output.status.success() => {
-            eprintln!("[launch] success");
-            Json(serde_json::json!({ "ok": true }))
-        }
-        Ok(output) => {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            eprintln!(
-                "[launch] zellij failed: status={} stderr={} stdout={}",
-                output.status, stderr, stdout
-            );
-            Json(serde_json::json!({ "error": stderr }))
-        }
-        Err(e) => {
-            eprintln!("[launch] spawn error: {}", e);
-            Json(serde_json::json!({ "error": format!("{}", e) }))
-        }
-    }
+    run_in_zellij(
+        body.zellij_session.as_deref(),
+        body.target_tab_id,
+        body.project.as_deref(),
+        &cmd,
+        "launch",
+    )
+    .await
 }
 
 async fn resurrect_session(
@@ -922,8 +954,8 @@ async fn resurrect_session(
     Json(body): Json<ResurrectRequest>,
 ) -> impl IntoResponse {
     eprintln!(
-        "[resurrect] session={} project={} zellij_session={:?} skip={:?}",
-        id, body.project, body.zellij_session, body.dangerously_skip_permissions
+        "[resurrect] session={} project={} zellij_session={:?} skip={:?} target_tab={:?}",
+        id, body.project, body.zellij_session, body.dangerously_skip_permissions, body.target_tab_id
     );
 
     // Ensure the Zellij session exists (create if needed)
@@ -941,8 +973,6 @@ async fn resurrect_session(
         eprintln!("[resurrect] WARNING: no zellij_session provided");
     }
 
-    let mut args = vec!["action", "new-tab", "--cwd", &body.project];
-
     let cmd = if body.dangerously_skip_permissions.unwrap_or(false) {
         format!(
             "$SHELL -c 'claude --resume {} --dangerously-skip-permissions'",
@@ -952,39 +982,14 @@ async fn resurrect_session(
         format!("$SHELL -c 'claude --resume {}'", id)
     };
 
-    args.extend(["--", "sh", "-c"]);
-    let args_owned: Vec<String> = args.iter().map(|s| s.to_string()).collect();
-    let mut final_args = args_owned;
-    final_args.push(cmd.clone());
-
-    eprintln!(
-        "[resurrect] running: zellij {:?} {:?}",
-        body.zellij_session, final_args
-    );
-
-    match zellij_cmd(body.zellij_session.as_deref())
-        .args(&final_args)
-        .output()
-        .await
-    {
-        Ok(output) if output.status.success() => {
-            eprintln!("[resurrect] success");
-            Json(serde_json::json!({ "ok": true }))
-        }
-        Ok(output) => {
-            let stderr = String::from_utf8_lossy(&output.stderr);
-            let stdout = String::from_utf8_lossy(&output.stdout);
-            eprintln!(
-                "[resurrect] zellij failed: status={} stderr={} stdout={}",
-                output.status, stderr, stdout
-            );
-            Json(serde_json::json!({ "error": String::from_utf8_lossy(&output.stderr) }))
-        }
-        Err(e) => {
-            eprintln!("[resurrect] spawn error: {}", e);
-            Json(serde_json::json!({ "error": format!("{}", e) }))
-        }
-    }
+    run_in_zellij(
+        body.zellij_session.as_deref(),
+        body.target_tab_id,
+        Some(&body.project),
+        &cmd,
+        "resurrect",
+    )
+    .await
 }
 
 async fn kill_session(
@@ -1044,6 +1049,23 @@ async fn get_zellij_sessions() -> impl IntoResponse {
             Json(serde_json::json!({ "sessions": sessions }))
         }
         _ => Json(serde_json::json!({ "sessions": [] })),
+    }
+}
+
+async fn get_zellij_tabs(Query(params): Query<HashMap<String, String>>) -> impl IntoResponse {
+    let session = params.get("session");
+    match zellij_cmd(session.map(|s| s.as_str()))
+        .args(["action", "list-tabs", "--json"])
+        .output()
+        .await
+    {
+        Ok(output) if output.status.success() => {
+            match serde_json::from_slice::<serde_json::Value>(&output.stdout) {
+                Ok(tabs) => Json(serde_json::json!({ "tabs": tabs })),
+                Err(_) => Json(serde_json::json!({ "tabs": [] })),
+            }
+        }
+        _ => Json(serde_json::json!({ "tabs": [] })),
     }
 }
 

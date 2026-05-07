@@ -246,6 +246,7 @@ pub struct LaunchRequest {
     pub project: Option<String>,
     pub prompt: Option<String>,
     pub model: Option<String>,
+    pub target_tab_id: Option<u64>,
     pub dangerously_skip_permissions: Option<bool>,
     pub zellij_session: Option<String>,
 }
@@ -266,6 +267,7 @@ pub struct PushSubscriptionKeys {
 #[serde(rename_all = "camelCase")]
 pub struct ResurrectRequest {
     pub project: String,
+    pub target_tab_id: Option<u64>,
     pub dangerously_skip_permissions: Option<bool>,
     pub zellij_session: Option<String>,
 }
