@@ -1027,7 +1027,7 @@ function SessionView(props: SessionViewProps) {
                   onChange={(e) => updateInput(e.target.value)}
                   className="flex-1 resize-none rounded-lg border border-border bg-card px-3 py-2 text-sm text-foreground placeholder-muted-foreground focus:outline-none focus:border-ring"
                   onKeyDown={(e) => {
-                    if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && navigator.maxTouchPoints === 0) {
+                    if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && navigator.maxTouchPoints === 0) {
                       e.preventDefault();
                       sendMessage();
                     }
