@@ -3,7 +3,7 @@
 import type { ComponentProps, HTMLAttributes } from "react";
 import { cn } from "../../lib/utils";
 import { cjk } from "@streamdown/cjk";
-import { code } from "@streamdown/code";
+import { createCodePlugin } from "@streamdown/code";
 import { math } from "@streamdown/math";
 import { memo } from "react";
 import { Streamdown } from "streamdown";
@@ -46,6 +46,7 @@ export const MessageContent = ({
 
 export type MessageResponseProps = ComponentProps<typeof Streamdown>;
 
+const code = createCodePlugin({ themes: ["github-light", "github-dark-dimmed"] });
 const streamdownPlugins = { cjk, code, math };
 
 export const MessageResponse = memo(

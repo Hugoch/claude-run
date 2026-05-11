@@ -198,6 +198,16 @@ select option {
   border-radius: 8px;
 }
 
+/* Force dark theme colors in code blocks - the streamdown dark: Tailwind variant
+   doesn't match the project's custom @custom-variant dark definition */
+.dark [data-streamdown="code-block-body"] {
+  background: var(--shiki-dark-bg, transparent) !important;
+  color: var(--shiki-dark, inherit) !important;
+}
+.dark [data-streamdown="code-block-body"] span[style] {
+  color: var(--shiki-dark, inherit) !important;
+}
+
 [data-streamdown="inline-code"] {
   background: color-mix(in srgb, var(--color-foreground) 12%, transparent) !important;
   border: 1px solid color-mix(in srgb, var(--color-foreground) 10%, transparent);

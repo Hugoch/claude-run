@@ -9,7 +9,7 @@ import {
 } from "../ui/collapsible";
 import { cn } from "../../lib/utils";
 import { cjk } from "@streamdown/cjk";
-import { code } from "@streamdown/code";
+import { createCodePlugin } from "@streamdown/code";
 import { math } from "@streamdown/math";
 import { BrainIcon, ChevronDownIcon } from "lucide-react";
 import {
@@ -193,6 +193,7 @@ export const ReasoningTrigger = memo(
 
 export type ReasoningContentProps = ComponentProps<typeof CollapsibleContent>;
 
+const code = createCodePlugin({ themes: ["github-light", "github-dark-dimmed"] });
 const streamdownPlugins = { cjk, code, math };
 
 export const ReasoningContent = memo(
