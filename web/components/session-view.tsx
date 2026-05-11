@@ -1030,6 +1030,14 @@ function SessionView(props: SessionViewProps) {
                     if (e.key === "Enter" && !e.shiftKey && !e.ctrlKey && !e.metaKey && !e.altKey && navigator.maxTouchPoints === 0) {
                       e.preventDefault();
                       sendMessage();
+                    } else if (e.key === "Enter" && e.altKey) {
+                      e.preventDefault();
+                      const ta = e.currentTarget;
+                      const start = ta.selectionStart;
+                      const end = ta.selectionEnd;
+                      const newValue = inputValue.slice(0, start) + "\n" + inputValue.slice(end);
+                      updateInput(newValue);
+                      requestAnimationFrame(() => { ta.selectionStart = ta.selectionEnd = start + 1; });
                     }
                   }}
                 />
